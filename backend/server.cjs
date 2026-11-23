@@ -17,6 +17,7 @@ const {
 } = require('./roomManager.cjs');
 const { DailyStats } = require('./dailyStats.cjs');
 const auth = require('./auth.cjs');
+const monopoly = require('./monopoly.cjs');
 
 const app = express();
 const server = http.createServer(app);
@@ -990,6 +991,12 @@ function forceDetachPlayerFromExistingContexts(playerId, nextRoomCode = null, is
 }
 
 wss.on('connection', (ws, req) => {
+  // 大富翁聚会模式：同一个 WebSocket 端口按 query 分流（?party=screen / ?party=phone）
+  if (monopoly.handles(req)) {
+    monopoly.attach(ws, req);
+    return;
+  }
+
   let playerId = null;
 
   // 账号身份：浏览器握手时会自动带上 Cookie，在这里解析出登录用户
@@ -3611,6 +3618,13 @@ function mountGamePublicAssets() {
 
 mountGamePublicAssets();
 
+// 大富翁：服务端模块不对外；语音接口没配密钥时明确回 503，前端自动退回浏览器自带语音
+app.use('/games/monopoly', (req, res, next) => {
+  if (/^\/(party|tts)\.mjs$/i.test(req.path)) return res.status(404).type('text/plain').send('Not Found');
+  if (req.path === '/tts') return res.status(503).json({ error: '语音合成未配置' });
+  next();
+});
+
 // 游戏静态资源：/games/<游戏id>/...，同时挂载共享规则引擎 /games/shared/...
 app.use(
   '/games',
@@ -3647,21 +3661,29 @@ function startAutoCleanup() {
 
 // -------------------------- 启动服务器 --------------------------
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`服务器运行在 http://localhost:${PORT}`);
-  console.log(`WebSocket服务器运行在 ws://localhost:${PORT}`);
-  console.log(`\n游戏大厅: http://localhost:${PORT}/`);
-  console.log(`飞行棋:   http://localhost:${PORT}/games/flight/`);
-  console.log(`管理面板: http://localhost:${PORT}/games/flight/admin.html`);
-  console.log(`\n查询接口:`);
-  console.log(`  - 房间列表: http://localhost:${PORT}/api/rooms`);
-  console.log(`  - 游戏会话: http://localhost:${PORT}/api/sessions`);
-  console.log(`  - 服务器统计: http://localhost:${PORT}/api/stats`);
-  console.log(`  - 手动清理: http://localhost:${PORT}/api/cleanup (POST)`);
+monopoly.setPort(PORT);
 
-  // 启动自动清理任务
-  startAutoCleanup();
+function startServer() {
+  server.listen(PORT, () => {
+    console.log(`服务器运行在 http://localhost:${PORT}`);
+    console.log(`WebSocket服务器运行在 ws://localhost:${PORT}`);
+    console.log(`\n游戏大厅: http://localhost:${PORT}/`);
+    console.log(`飞行棋:   http://localhost:${PORT}/games/flight/`);
+    console.log(`大富翁:   http://localhost:${PORT}/games/monopoly/`);
+    console.log(`管理面板: http://localhost:${PORT}/games/flight/admin.html`);
+    console.log(`\n查询接口:`);
+    console.log(`  - 房间列表: http://localhost:${PORT}/api/rooms`);
+    console.log(`  - 游戏会话: http://localhost:${PORT}/api/sessions`);
+    console.log(`  - 服务器统计: http://localhost:${PORT}/api/stats`);
+    console.log(`  - 手动清理: http://localhost:${PORT}/api/cleanup (POST)`);
 
-  // 启动回合看门狗，兜底被浏览器节流而停摆的对局
-  startTurnWatchdog();
-});
+    // 启动自动清理任务
+    startAutoCleanup();
+
+    // 启动回合看门狗，兜底被浏览器节流而停摆的对局
+    startTurnWatchdog();
+  });
+}
+
+// 大富翁的服务端模块是原生 ESM，先预加载再开门，避免首条连接落在未就绪状态
+monopoly.load().then(startServer, startServer);

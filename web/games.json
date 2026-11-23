@@ -19,6 +19,19 @@
       "tags": ["联机", "房间码", "AI 托管", "观战回放"]
     },
     {
+      "id": "monopoly",
+      "name": "大富翁",
+      "subtitle": "客厅大富翁",
+      "emoji": "🎩",
+      "accent": "#e3c07a",
+      "accentSoft": "#fbf3df",
+      "desc": "电视当棋盘、手机当骰子：扫码进房，选个角色，掷骰买下全世界。68 格棋盘、48 个国家、盖房抵押入狱破产全套规则，服务端裁决。",
+      "path": "/games/monopoly/",
+      "status": "online",
+      "players": "2-6 人",
+      "tags": ["扫码开局", "大屏+手机", "服务端权威"]
+    },
+    {
       "id": "gomoku",
       "name": "五子棋",
       "subtitle": "待开发",

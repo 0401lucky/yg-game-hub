@@ -11,6 +11,9 @@
   var listeners = [];
   var els = {};
 
+  // 战绩面板上的游戏名（新增游戏时在这里加一行）
+  var GAME_NAMES = { flight: '飞行棋', monopoly: '大富翁' };
+
   // ------------------------ 工具 ------------------------
 
   function el(tag, cls, html) {
@@ -103,6 +106,14 @@
     grid.appendChild(el('div', 'ac-stat', '<b>' + stats.winRate + '%</b><span>胜率</span>'));
     panel.appendChild(grid);
 
+    // 玩的不止一款游戏了，拆开给个数
+    if (stats.byGame && stats.byGame.length) {
+      var parts = stats.byGame
+        .filter(function (g) { return g.games > 0; })
+        .map(function (g) { return (GAME_NAMES[g.gameId] || g.gameId) + ' ' + g.games + ' 局'; });
+      if (parts.length) panel.appendChild(el('div', 'ac-panel-sub', parts.join(' · ')));
+    }
+
     var recent = el('div', 'ac-recent');
     if (!stats.recent || !stats.recent.length) {
       recent.appendChild(el('div', 'ac-empty', '还没有战绩，去开一局'));
@@ -110,7 +121,7 @@
       stats.recent.slice(0, 6).forEach(function (m) {
         var row = el('div', 'ac-recent-row');
         var when = new Date(m.endedAt);
-        var label = (m.roomCode || '自定义') + ' · ' + (m.playerCount || 0) + '人';
+        var label = (GAME_NAMES[m.gameId] || '对局') + ' · ' + (m.roomCode || '自定义') + ' · ' + (m.playerCount || 0) + '人';
         var time = isNaN(when) ? '' : (when.getMonth() + 1) + '/' + when.getDate();
         row.appendChild(el('span', null, label + (time ? ' · ' + time : '')));
         row.appendChild(el('span', m.isWinner ? 'ac-win' : 'ac-lose', m.isWinner ? '胜' : '负'));

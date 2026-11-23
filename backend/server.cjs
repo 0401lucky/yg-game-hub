@@ -17,7 +17,6 @@ const {
 } = require('./roomManager.cjs');
 const { DailyStats } = require('./dailyStats.cjs');
 const auth = require('./auth.cjs');
-const monopoly = require('./monopoly.cjs');
 
 const app = express();
 const server = http.createServer(app);
@@ -991,12 +990,6 @@ function forceDetachPlayerFromExistingContexts(playerId, nextRoomCode = null, is
 }
 
 wss.on('connection', (ws, req) => {
-  // 大富翁聚会模式：同一个 WebSocket 端口按 query 分流（?party=screen / ?party=phone）
-  if (monopoly.handles(req)) {
-    monopoly.attach(ws, req);
-    return;
-  }
-
   let playerId = null;
 
   // 账号身份：浏览器握手时会自动带上 Cookie，在这里解析出登录用户
@@ -1433,7 +1426,38 @@ function handleListRooms(ws) {
   }
 }
 
+// 建房幂等缓存：同一个 requestId 在窗口期内只建一间房。
+// 以前客户端断线重连会把 createRoom 补发一遍，服务端每收到一次就把玩家从原房间搬走、
+// 建一间新房，原来那间随之销毁 —— 房里另一位玩家直接被告知「房间不存在」。
+const CREATE_ROOM_IDEMPOTENCY_MS = 60000;
+const createRoomRequests = new Map(); // `${playerId}:${requestId}` -> { roomCode, ts }
+
+function pruneCreateRoomRequests(now) {
+  for (const [key, entry] of createRoomRequests) {
+    if (now - entry.ts > CREATE_ROOM_IDEMPOTENCY_MS) createRoomRequests.delete(key);
+  }
+}
+
 function handleCreateRoom(ws, playerId, message) {
+  const requestId = typeof message.requestId === 'string' ? message.requestId.slice(0, 80) : '';
+  const now = Date.now();
+
+  if (requestId) {
+    pruneCreateRoomRequests(now);
+    const cacheKey = `${playerId}:${requestId}`;
+    const cached = createRoomRequests.get(cacheKey);
+    if (cached && now - cached.ts <= CREATE_ROOM_IDEMPOTENCY_MS) {
+      const existing = roomManager.getRoom(cached.roomCode);
+      if (existing && existing.players.has(playerId)) {
+        console.log(`[建房幂等] ${playerId} 重复请求 ${requestId}，复用房间 ${cached.roomCode}`);
+        existing.players.get(playerId).ws = ws;
+        roomManager.setPlayerConnection(playerId, ws);
+        ws.send(JSON.stringify({ type: 'roomCreated', room: existing.toJSON(), replayed: true }));
+        return;
+      }
+    }
+  }
+
   // 检查玩家是否在其他房间中
   const existingRoom = roomManager.getPlayerRoom(playerId);
   if (existingRoom) {
@@ -1450,6 +1474,10 @@ function handleCreateRoom(ws, playerId, message) {
   const player = new Player(playerId, ws, auth.nicknameForRequest(ws, message.nickname), emoji);
   const room = roomManager.createRoom(player);
   ws.send(JSON.stringify({ type: 'roomCreated', room: room.toJSON() }));
+
+  if (requestId) {
+    createRoomRequests.set(`${playerId}:${requestId}`, { roomCode: room.code, ts: now });
+  }
 
   // 每日统计：记录创建房间
   dailyStats.recordRoomCreated();
@@ -3470,6 +3498,45 @@ app.get('/api/stats', (req, res) => {
 });
 
 /**
+ * 客户端异常/生命周期上报
+ * POST /api/client-error
+ *
+ * 手机上「闪退」时前端 JS 往往没有机会留下任何东西，只能靠这条兜底：
+ * 浏览器崩溃前最后一次 onerror / unhandledrejection / pagehide 会落到这里，
+ * 之后看日志就能分清「是页面自己跳走了」还是「渲染进程被系统杀了」。
+ */
+const clientErrorWindow = new Map(); // ip -> { count, resetAt }
+app.post('/api/client-error', (req, res) => {
+  try {
+    const ip = String(
+      req.headers['cf-connecting-ip']
+      || (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+      || req.ip
+      || req.socket?.remoteAddress
+      || 'unknown'
+    );
+    const now = Date.now();
+    const bucket = clientErrorWindow.get(ip);
+    if (!bucket || now > bucket.resetAt) {
+      clientErrorWindow.set(ip, { count: 1, resetAt: now + 60000 });
+    } else {
+      bucket.count += 1;
+      if (bucket.count > 60) return res.json({ success: true, throttled: true }); // 别让坏页面刷爆日志
+    }
+
+    const body = req.body || {};
+    const trim = (value, max) => String(value == null ? '' : value).slice(0, max);
+    console.error(`[前端异常] ${trim(body.kind, 20) || 'error'} | ${trim(body.url, 200)} | ${trim(body.message, 300)}`);
+    if (body.stack) console.error(`[前端异常栈] ${trim(body.stack, 1200)}`);
+    if (body.extra) console.error(`[前端异常上下文] ${trim(JSON.stringify(body.extra), 500)}`);
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false });
+  }
+});
+
+/**
  * 手动清理孤立资源
  * POST /api/cleanup
  */
@@ -3618,13 +3685,6 @@ function mountGamePublicAssets() {
 
 mountGamePublicAssets();
 
-// 大富翁：服务端模块不对外；语音接口没配密钥时明确回 503，前端自动退回浏览器自带语音
-app.use('/games/monopoly', (req, res, next) => {
-  if (/^\/(party|tts)\.mjs$/i.test(req.path)) return res.status(404).type('text/plain').send('Not Found');
-  if (req.path === '/tts') return res.status(503).json({ error: '语音合成未配置' });
-  next();
-});
-
 // 游戏静态资源：/games/<游戏id>/...，同时挂载共享规则引擎 /games/shared/...
 app.use(
   '/games',
@@ -3667,7 +3727,6 @@ function startAutoCleanup() {
 
 // -------------------------- 启动服务器 --------------------------
 const PORT = process.env.PORT || 3001;
-monopoly.setPort(PORT);
 
 function startServer() {
   server.listen(PORT, () => {
@@ -3675,7 +3734,6 @@ function startServer() {
     console.log(`WebSocket服务器运行在 ws://localhost:${PORT}`);
     console.log(`\n游戏大厅: http://localhost:${PORT}/`);
     console.log(`飞行棋:   http://localhost:${PORT}/games/flight/`);
-    console.log(`大富翁:   http://localhost:${PORT}/games/monopoly/`);
     console.log(`管理面板: http://localhost:${PORT}/games/flight/admin.html`);
     console.log(`\n查询接口:`);
     console.log(`  - 房间列表: http://localhost:${PORT}/api/rooms`);
@@ -3691,5 +3749,4 @@ function startServer() {
   });
 }
 
-// 大富翁的服务端模块是原生 ESM，先预加载再开门，避免首条连接落在未就绪状态
-monopoly.load().then(startServer, startServer);
+startServer();

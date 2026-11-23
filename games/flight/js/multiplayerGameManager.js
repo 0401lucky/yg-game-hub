@@ -768,18 +768,22 @@ class MultiplayerGameManager {
         if (this.disableReconnect) {
             return;
         }
-        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.error('达到最大重连次数，停止重连');
-            this.showConnectionError('连接已断开，请刷新页面重试');
-            return;
-        }
 
+        // 不再「失败满 N 次就把页面送回主页」。
+        // 手机上断个十几秒太常见了，以前满 5 次就 location.replace('/')，
+        // 用户看到的就是「打一半闪退」，其实服务端那一局还好好的等着他回来。
         this.reconnectAttempts++;
+        const delay = Math.min(this.reconnectDelay * Math.pow(1.5, Math.min(this.reconnectAttempts - 1, 8)), 10000);
+
+        if (this.reconnectAttempts >= 2) {
+            this.showReconnectNotice(this.reconnectAttempts);
+        }
 
         try {
             await this.connectToServer(this.serverUrl);
             if (this.isConnected) {
                 this.reconnectAttempts = 0;
+                this.hideReconnectNotice();
                 this.rejoinGameSession(); // 重新加入游戏会话
                 // 断线期间服务端可能已推进多步，重连后立即对齐一次权威棋面
                 this.requestSnapshot('重连成功', { force: true });
@@ -788,8 +792,33 @@ class MultiplayerGameManager {
             console.error('重新连接失败:', error);
             setTimeout(() => {
                 this.attemptReconnect();
-            }, this.reconnectDelay);
+            }, delay);
         }
+    }
+
+    /** 断线提示条（常驻，直到重连成功或玩家自己点回主页） */
+    showReconnectNotice(attempt = 1) {
+        let el = document.getElementById('reconnectNotice');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'reconnectNotice';
+            el.style.cssText = [
+                'position:fixed', 'left:50%', 'top:12px', 'transform:translateX(-50%)',
+                'z-index:2147483000', 'max-width:min(92vw,520px)', 'padding:10px 14px',
+                'border-radius:12px', 'font-size:14px', 'line-height:1.45',
+                'background:#fff7e6', 'color:#7a4b00', 'border:1px solid #f2d08a',
+                'box-shadow:0 6px 24px rgba(0,0,0,.18)', 'display:flex', 'gap:10px',
+                'align-items:center', 'flex-wrap:wrap',
+            ].join(';');
+            document.body.appendChild(el);
+        }
+        el.textContent = `网络断开了，正在重连（第 ${attempt} 次）…`;
+        el.style.display = 'flex';
+    }
+
+    hideReconnectNotice() {
+        const el = document.getElementById('reconnectNotice');
+        if (el) el.style.display = 'none';
     }
 
     /**
@@ -2448,7 +2477,9 @@ class MultiplayerGameManager {
         this.showError(message);
 
         setTimeout(() => {
-            window.location.replace('/');
+            // 回飞行棋首页（不是门户首页）：那边会把原因带出来，
+            // 而且玩家还想再开一局时不用重新从门户点进来
+            window.location.replace('./');
         }, 2000);
     }
 
@@ -3477,11 +3508,20 @@ class MultiplayerGameManager {
      */
     handleRoomDestroying(data) {
         console.log('房间即将销毁:', data);
-        // 5秒后返回主页
-        setTimeout(() => {
-            alert('房间已被销毁，即将返回主页');
-            window.location.replace('/');
-        }, 5000);
+        // 以前是 alert 之后 location.replace('/')：手机上 alert 会卡住页面，
+        // 然后整页被送去大厅，看起来同样是「闪退」。改成页面内说清楚，让玩家自己点。
+        this.showReconnectNotice(`房间 ${data.roomCode || ''} 已被销毁，本局结束`);
+        const el = document.getElementById('reconnectNotice');
+        if (el) {
+            el.textContent = '这间房已经被销毁了（本局结束）';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = '回大厅';
+            btn.style.cssText = 'border:0;border-radius:8px;padding:6px 10px;cursor:pointer;background:#2f6fed;color:#fff;font-size:13px;';
+            btn.addEventListener('click', () => window.location.replace('./'));
+            el.appendChild(btn);
+        }
+        this.disableReconnect = true;
     }
 
     /**

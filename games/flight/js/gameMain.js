@@ -16,8 +16,11 @@ import { createState, apply, makeRng } from '../../shared/engine.mjs';
 import { decodeReplayAction } from '../../shared/replayCodec.mjs';
 import { loadLocalGame } from './replayShare.js';
 import { FlyingChessGameBase, createGameRuntime } from './gameBase.js';
+import { installClientTelemetry } from './clientTelemetry.js';
 import './titlesHoverCard.js';
 import './theme.js';
+
+installClientTelemetry('flight-game');
 
 class FlyingChessGame extends FlyingChessGameBase {
     constructor() {

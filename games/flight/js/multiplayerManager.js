@@ -874,95 +874,159 @@ class MultiplayerManager {
             return true;
         }
 
-        try {
-            // 动态导入WebSocketClient
-            const { WebSocketClient } = await import('./websocketClient.js');
-            this.wsClient = new WebSocketClient();
-
-            return new Promise((resolve, reject) => {
-                const originalOnOpen = this.wsClient.onOpen.bind(this.wsClient);
-
-                this.wsClient.onOpen = (event) => {
-                    // 先调用原始的onOpen方法设置isConnected状态
-                    originalOnOpen(event);
-
-                    console.log('WebSocket连接成功');
-                    this.bindWebSocketEvents();
-
-                    this.requestReconnectInfo();
-
-                    // 移动端杀后台/切回前台场景：页面不会刷新，但WebSocket会重新建立。
-                    // 这里相当于“无刷新刷新”：恢复roomCode并主动同步最新房间状态。
-                    try {
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const urlRoom = (urlParams.get('room') || '').toUpperCase().trim();
-                        const storedRoom = (sessionStorage.getItem('aeroplaneChess_roomCode') || '').toUpperCase().trim();
-                        const reconnectRoom = (reconnectManager && reconnectManager.roomCode ? String(reconnectManager.roomCode) : '').toUpperCase().trim();
-
-                        // 只有「确实在一间已确认的房间里」才自动同步。建房/加入的加载阶段
-                        // 房间面板也是开着的，但那时候的候选房间号可能来自上一间的残留，
-                        // 拿它去 join 只会拿到「房间不存在」，人被误判成房间没了
-                        const candidateRoom = urlRoom || reconnectRoom || storedRoom;
-                        if (candidateRoom && candidateRoom.length === 4 && this.currentRoom) {
-                            if (!this.roomCode) {
-                                this.roomCode = candidateRoom;
-                            }
-                            setTimeout(() => {
-                                if (!this.isDestroyed && !this.isLeavingRoom) {
-                                    this.syncRoomStateAfterReconnect();
-                                }
-                            }, 50);
-                        }
-                    } catch (e) {
-                        // ignore
-                    }
-
-                    // 首次进入在线联机面板时，roomSelection 已经显示但不会触发 showRoomSelection()
-                    // 这里做一次兜底拉取房间列表
-                    if (this.isRoomSelectionActive()) {
-                        setTimeout(() => {
-                            this.requestPublicRooms();
-                        }, 50);
-                    }
-                    // 重置重连计数器
-                    this.reconnectAttempts = 0;
-                    resolve(true);
-                };
-
-                this.wsClient.onError = (error) => {
-                    console.error('WebSocket连接错误:', error);
-                    reject(error);
-                };
-
-                this.wsClient.onClose = (event) => {
-                    console.log('WebSocket连接关闭', event);
-
-                    // 如果正在主动离开房间，不要重连也不要显示状态
-                    if (this.isLeavingRoom) {
-                        return;
-                    }
-
-                    // 如果不是主动关闭且不在销毁状态，则尝试重连
-                    if (event.code !== 1000 && event.code !== 1001 && !this.isDestroyed) {
-                        // 避免立即重连，添加延迟
-                        setTimeout(() => {
-                            if (!this.isDestroyed && !this.isLeavingRoom && (!this.wsClient || !this.wsClient.isConnected)) {
-                                this.attemptReconnect();
-                            }
-                        }, 2000);
-                    }
-                };
-
-                // 连接到服务器 - 支持环境变量配置
-                const wsUrl = window.location.protocol === 'https:'
-                    ? `wss://${window.location.host}/ws`
-                    : `ws://${window.location.host.replace(/:\d+/, ':3001')}`;
-                this.wsClient.connect(wsUrl);
-            });
-        } catch (error) {
-            console.error('连接服务器失败:', error);
-            return false;
+        // 单飞：同时只能有一次建连。以前每个调用方都 new 一个 WebSocketClient，
+        // 同一个 playerId 挂好几条 socket，服务端按「新连接顶掉旧连接」处理，
+        // 被顶掉的那条又触发重连，于是每秒重连一次、日志刷屏、房间反复重建
+        if (this._connectPromise) {
+            return this._connectPromise;
         }
+
+        this._connectPromise = this._connectToServerOnce()
+            .catch((error) => {
+                console.error('连接服务器失败:', error);
+                return false;
+            })
+            .finally(() => { this._connectPromise = null; });
+
+        return this._connectPromise;
+    }
+
+    async _connectToServerOnce() {
+        // 动态导入WebSocketClient
+        const { WebSocketClient } = await import('./websocketClient.js');
+
+        // 复用已有客户端：换新实例会把排队消息、消息处理器一起丢掉，
+        // 旧 socket 也留在那儿没人关，正好凑成「互相顶号」的循环
+        if (!this.wsClient) {
+            this.wsClient = new WebSocketClient();
+        }
+        const client = this.wsClient;
+
+        const originalOnOpen = client.onOpen.bind(client);
+
+        client.onOpen = (event) => {
+            // 先调用原始的onOpen方法设置isConnected状态
+            originalOnOpen(event);
+
+            console.log('WebSocket连接成功');
+            this.bindWebSocketEvents();
+            this._hideNetNotice();
+
+            this.requestReconnectInfo();
+
+            // 移动端杀后台/切回前台场景：页面不会刷新，但WebSocket会重新建立。
+            // 这里相当于“无刷新刷新”：恢复roomCode并主动同步最新房间状态。
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlRoom = (urlParams.get('room') || '').toUpperCase().trim();
+                const storedRoom = (sessionStorage.getItem('aeroplaneChess_roomCode') || '').toUpperCase().trim();
+                const reconnectRoom = (reconnectManager && reconnectManager.roomCode ? String(reconnectManager.roomCode) : '').toUpperCase().trim();
+
+                // 只有「确实在一间已确认的房间里」才自动同步。
+                // 建房/加入的加载阶段房间面板也是开着的，但那时候的候选房间号可能来自上一间的残留，
+                // 拿它去 join 只会拿到「房间不存在」，人被误判成房间没了
+                const candidateRoom = urlRoom || reconnectRoom || storedRoom;
+                if (candidateRoom && candidateRoom.length === 4 && this.currentRoom) {
+                    if (!this.roomCode) {
+                        this.roomCode = candidateRoom;
+                    }
+                    setTimeout(() => {
+                        if (!this.isDestroyed && !this.isLeavingRoom) {
+                            this.syncRoomStateAfterReconnect();
+                        }
+                    }, 50);
+                }
+            } catch (e) {
+                // ignore
+            }
+
+            // 首次进入在线联机面板时，roomSelection 已经显示但不会触发 showRoomSelection()
+            // 这里做一次兜底拉取房间列表
+            if (this.isRoomSelectionActive()) {
+                setTimeout(() => {
+                    this.requestPublicRooms();
+                }, 50);
+            }
+            // 重置重连计数器
+            this.reconnectAttempts = 0;
+        };
+
+        client.onError = (error) => {
+            console.error('WebSocket连接错误:', error);
+        };
+
+        client.onClose = (event) => {
+            // 旧 socket 迟到的关闭事件：已经有新连接了，忽略，别再叠一轮重连
+            if (client.ws && event && event.target && client.ws !== event.target) {
+                console.log('忽略旧连接的关闭事件');
+                return;
+            }
+
+            console.log('WebSocket连接关闭', event && event.code);
+
+            // 如果正在主动离开房间，不要重连也不要显示状态
+            if (this.isLeavingRoom) {
+                return;
+            }
+
+            // 如果不是主动关闭且不在销毁状态，则尝试重连
+            if (event && event.code !== 1000 && event.code !== 1001 && !this.isDestroyed) {
+                // 避免立即重连，添加延迟
+                setTimeout(() => {
+                    if (!this.isDestroyed && !this.isLeavingRoom && (!this.wsClient || !this.wsClient.isConnected)) {
+                        this.attemptReconnect();
+                    }
+                }, 2000);
+            }
+        };
+
+        // 连接到服务器 - 支持环境变量配置
+        const wsUrl = window.location.protocol === 'https:'
+            ? `wss://${window.location.host}/ws`
+            : `ws://${window.location.host.replace(/:\d+/, ':3001')}`;
+        return client.connect(wsUrl);
+    }
+
+    /** 页面内提示条：网络/房间状态变化都在这里说清楚，不整页跳走 */
+    _showNetNotice(text, options = {}) {
+        const { actionText = '', onAction = null, tone = 'warn', autoHide = 0 } = options;
+        let el = document.getElementById('netNoticeBar');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'netNoticeBar';
+            el.style.cssText = [
+                'position:fixed', 'left:50%', 'top:12px', 'transform:translateX(-50%)',
+                'z-index:2147483000', 'max-width:min(92vw,520px)', 'padding:10px 14px',
+                'border-radius:12px', 'font-size:14px', 'line-height:1.45',
+                'box-shadow:0 6px 24px rgba(0,0,0,.18)', 'display:flex', 'gap:10px',
+                'align-items:center', 'flex-wrap:wrap',
+            ].join(';');
+            document.body.appendChild(el);
+        }
+        el.style.background = tone === 'error' ? '#fdecec' : '#fff7e6';
+        el.style.color = tone === 'error' ? '#8a1f1f' : '#7a4b00';
+        el.style.border = tone === 'error' ? '1px solid #f3b7b7' : '1px solid #f2d08a';
+        el.textContent = text;
+
+        if (actionText && typeof onAction === 'function') {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = actionText;
+            btn.style.cssText = 'border:0;border-radius:8px;padding:6px 10px;cursor:pointer;background:#2f6fed;color:#fff;font-size:13px;';
+            btn.addEventListener('click', onAction);
+            el.appendChild(btn);
+        }
+        el.style.display = 'flex';
+
+        if (this._netNoticeTimer) clearTimeout(this._netNoticeTimer);
+        if (autoHide > 0) {
+            this._netNoticeTimer = setTimeout(() => this._hideNetNotice(), autoHide);
+        }
+    }
+
+    _hideNetNotice() {
+        const el = document.getElementById('netNoticeBar');
+        if (el) el.style.display = 'none';
     }
 
     attemptReconnect() {
@@ -972,16 +1036,28 @@ class MultiplayerManager {
             return;
         }
 
-        if (this.isDestroyed || this.reconnectAttempts >= this.maxReconnectAttempts) {
-            // 连接失败后重定向回主页
-            setTimeout(() => {
-                window.location.href = './';
-            }, 2000);
+        if (this.isDestroyed) {
             return;
         }
 
         this.reconnectAttempts++;
         const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 10000); // 指数退避，最大10秒
+
+        // 以前重连失败到次数就直接 location.href='./' 把页面送走，
+        // 手机上切个后台/进电梯就整个房间没了，用户看到的就是「闪退」。
+        // 现在只在页面里挂一条提示条，重连一直重试，什么时候断什么时候恢复都看得见。
+        if (this.reconnectAttempts === 2) {
+            this._showNetNotice('网络断开了，正在重连…');
+        } else if (this.reconnectAttempts >= 5) {
+            this._showNetNotice('还是连不上服务器，重试中…', {
+                tone: 'error',
+                actionText: '立即重连',
+                onAction: () => {
+                    this.reconnectAttempts = 0;
+                    this.connectToServer().catch(() => this.attemptReconnect());
+                }
+            });
+        }
 
         setTimeout(() => {
             if (!this.isDestroyed && !this.isLeavingRoom) {
@@ -1165,11 +1241,27 @@ class MultiplayerManager {
             return;
         }
 
+        // 断线状态下这条 join_room 以前会被塞进补发队列，等重连后再发一遍；
+        // 现在补发只放幂等消息，所以这里改成「先连上，再同步」，只发一次
+        if (!this.wsClient || !this.wsClient.isConnected) {
+            if (this._syncingRoomState) return;
+            this._syncingRoomState = true;
+            this.connectToServer()
+                .then((ok) => {
+                    this._syncingRoomState = false;
+                    if (ok && !this.isDestroyed && !this.isLeavingRoom) {
+                        setTimeout(() => this.syncRoomStateAfterReconnect(), 100);
+                    }
+                })
+                .catch(() => { this._syncingRoomState = false; });
+            return;
+        }
+
         console.log('发送 join_room 请求同步状态...');
 
         // 这里用 join_room 而不是 rejoinRoom：切回前台晚了一步、已经被超时移出的人，
         // join_room 还能把他放回座位（房间没开打、还有空位）；rejoinRoom 只会回「您不在该房间中」。
-        // 开打了 / 房间没了 / 满员这三种服务端会带 code 拒绝，客户端收到后送他回首页
+        // 开打了 / 房间没了 / 满员这三种服务端会带 code 拒绝，客户端收到后退回房间列表（不再整页跳走）
         this.wsClient.sendMessage('join_room', {
             roomCode: this.roomCode
         });
@@ -1266,10 +1358,12 @@ class MultiplayerManager {
                     }
                     sessionStorage.clear();
                     
-                    // 在 URL 中携带被踢出的标记
-                    window.location.replace('/?reason=kicked');
+                    // 在 URL 中携带被踢出的标记。
+                    // 注意要回「飞行棋首页」而不是门户首页：只有飞行棋首页认 ?reason= 并弹出原因，
+                    // 换成 '/' 的话玩家只会看到页面莫名其妙换掉了，和闪退没区别
+                    window.location.replace('./?reason=kicked');
                 } catch (e) {
-                    window.location.replace('/');
+                    window.location.replace('./');
                 }
                 break;
             }
@@ -1825,11 +1919,25 @@ class MultiplayerManager {
 
             case 'error':
                 console.error('服务器错误:', data.message);
-                // 房间没了 / 局已开打 / 已被移出 / 满员：本地那套房间上下文已经过期（超时被移除、后台切回来等），
-                // 面板里留着也是空壳，清掉并回首页；从房间列表手动输码加入的照旧走内联报错
+                // 房间没了 / 局已开打 / 已被移出 / 满员：本地那套房间上下文已经过期（超时被移除、后台切回来等）。
+                // 以前这里直接 window.location.replace('/?reason=...')，整页跳回大厅 ——
+                // 用户就是在点「准备」的那一下撞上这个分支，看到的就是「点了准备就闪退」。
+                // 现在：先静默重试一次（多半只是刚重连上、服务端还没把这条 socket 挂进房间），
+                // 还不行就在页面里说清楚 + 给一个「回房间列表」的按钮，页不跳。
                 const staleRoomCodes = ['gameStarted', 'roomGone', 'notInRoom', 'roomFull'];
                 if (staleRoomCodes.includes(data.code)
                     && (this.currentRoom || this.isRoomConfigActive?.())) {
+                    if (!this._staleRoomRetried && data.code !== 'gameStarted' && this.roomCode) {
+                        this._staleRoomRetried = true;
+                        console.warn(`房间上下文过期（${data.code}），静默重试一次 join_room`);
+                        setTimeout(() => {
+                            if (this.isDestroyed || this.isLeavingRoom) return;
+                            this.syncRoomStateAfterReconnect();
+                            // 重试只给一次机会，再来就当成真的失效
+                            setTimeout(() => { this._staleRoomRetried = false; }, 3000);
+                        }, 800);
+                        break;
+                    }
                     this.returnHomeForStaleRoom(data.code);
                     break;
                 }
@@ -2451,7 +2559,8 @@ class MultiplayerManager {
                     nickname: nickname,
                     emoji: this.selectedEmoji,
                     maxPlayers: 4,
-                    gameMode: 'multiplayer'
+                    gameMode: 'multiplayer',
+                    requestId: this.nextCreateRoomRequestId()
                 });
 
                 // 设置超时处理
@@ -2481,6 +2590,23 @@ class MultiplayerManager {
         console.log('处理创建房间错误:', errorMessage);
         this.showError('创建房间失败: ' + errorMessage);
     }
+    /**
+     * 建房用的幂等键：3 秒内重复点击（双击/连点/重连补发）拿到的是同一个键，
+     * 服务端据此只建一间房，不会再出现「点一下多出一间、把对手踢回大厅」
+     */
+    nextCreateRoomRequestId() {
+        const now = Date.now();
+        if (this._createRequestId && now - this._createRequestIdAt < 3000) {
+            return this._createRequestId;
+        }
+        const rand = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+            ? crypto.randomUUID()
+            : `${now.toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        this._createRequestId = `create-${rand}`;
+        this._createRequestIdAt = now;
+        return this._createRequestId;
+    }
+
     async createRoom() {
         console.log('开始创建房间...');
         try {
@@ -2506,7 +2632,8 @@ class MultiplayerManager {
                 maxPlayers: 4,
                 gameMode: 'multiplayer',
                 nickname: nickname, // 使用保存的昵称，如果为空，服务器会生成默认昵称
-                emoji: this.selectedEmoji
+                emoji: this.selectedEmoji,
+                requestId: this.nextCreateRoomRequestId()
             });
 
         } catch (error) {
@@ -2748,20 +2875,51 @@ class MultiplayerManager {
     }
 
     // 显示房间选择界面
-    /** 房间没了 / 局已开打：本地房间上下文已经过期，清掉并回首页（首页会说明原因） */
+    /** 房间没了 / 局已开打：本地房间上下文已经过期。
+     *  只把这层上下文清掉并退回「房间列表」，不再整页 replace 到大厅 ——
+     *  页一换走，用户那边看起来就是「闪退」，而且还丢了聊天、音效等一切状态。 */
     returnHomeForStaleRoom(reason = 'roomGone') {
         this._roomLeftConfirmed = true; // 别让这次跳转再触发一轮重连提示
         this.stopPublicRoomsAutoRefresh?.();
+
+        const reasonText = {
+            gameStarted: '这局已经开打了，你不在这一局里',
+            notInRoom: '你已经被移出这间房了',
+            roomFull: '房间已经满了',
+            roomGone: '这间房已经不在了（房主可能重开了一间）',
+        }[reason] || '房间状态已失效';
+
+        this._showNetNotice(`${reasonText}，点右边回到房间列表`, {
+            tone: 'error',
+            actionText: '回房间列表',
+            onAction: () => this.leaveStaleRoomToSelection(),
+        });
+
+        // 顺便把过期上下文清掉，避免「面板还在、点什么都报错」
         this.currentRoom = null;
         this.roomCode = null;
         this.players.clear();
         this.aiPlayers.clear();
         this._pendingAIOps = [];
-        try {
-            window.location.replace(`/?reason=${encodeURIComponent(reason)}`);
-        } catch (error) {
-            window.location.href = './';
+        if (this.wsClient) {
+            this.wsClient.roomCode = null;
+            this.wsClient.isHost = false;
         }
+        try {
+            const u = new URL(window.location);
+            if (u.searchParams.has('room')) {
+                u.searchParams.delete('room');
+                window.history.replaceState({}, document.title, u.toString());
+            }
+        } catch (error) {
+            // ignore
+        }
+    }
+
+    /** 从过期房间退回房间列表（留在本页，不跳转） */
+    leaveStaleRoomToSelection() {
+        this._hideNetNotice();
+        this.showRoomSelection();
     }
 
     showRoomSelection() {
@@ -3305,14 +3463,19 @@ class MultiplayerManager {
     }
 
     // 直接在color-circle内显示玩家表情（用于多人联机配置页面）
-    displayPlayerEmojiInCircle(circle, player, playerNum) {
+    displayPlayerEmojiInCircle(circle, player, playerNum, retry = 0) {
         // 检查表情数据是否已加载
         if (!this.emojis) {
+            // 表情没加载完就每 100ms 重试 —— 但必须有上限，
+            // 无上限的重试在弱网下会把定时器滚成雪球，手机上直接把渲染进程拖死
+            if (retry >= 5) {
+                console.warn('表情数据始终未加载，跳过表情显示');
+                return;
+            }
             console.warn('表情数据尚未加载，延迟显示表情');
-            // 延迟100ms后重试
             setTimeout(() => {
                 if (this.emojis) {
-                    this.displayPlayerEmojiInCircle(circle, player, playerNum);
+                    this.displayPlayerEmojiInCircle(circle, player, playerNum, retry + 1);
                 }
             }, 100);
             return;
@@ -3516,7 +3679,7 @@ class MultiplayerManager {
     }
 
     // 更新color-options中AI玩家的状态
-    updateColorOptionsForAI(aiPlayers = []) {
+    updateColorOptionsForAI(aiPlayers = [], retry = 0) {
         // 只操作多人联机面板内的color-option，避免影响人机模式
         const multiplayerPanel = document.getElementById('onlineMultiplayerConfig');
         if (!multiplayerPanel) return;
@@ -3603,11 +3766,20 @@ class MultiplayerManager {
 
                     // 检查表情数据是否已加载
                     if (!this.emojis || !this.emojis['bot']) {
-                        console.warn('表情数据尚未加载，延迟更新AI玩家显示');
-                        // 延迟100ms后重试
-                        setTimeout(() => {
-                            this.updateColorOptionsForAI(aiPlayers);
-                        }, 100);
+                        // 一个 AI 席位就排一个重试，四个席位叠起来就是指数级定时器，
+                        // 所以整块面板只排一次、而且有上限
+                        if (retry >= 5) {
+                            console.warn('表情数据始终未加载，跳过 AI 表情显示');
+                            return;
+                        }
+                        if (!this._aiEmojiRetryPending) {
+                            this._aiEmojiRetryPending = true;
+                            console.warn('表情数据尚未加载，延迟更新AI玩家显示');
+                            setTimeout(() => {
+                                this._aiEmojiRetryPending = false;
+                                this.updateColorOptionsForAI(aiPlayers, retry + 1);
+                            }, 100);
+                        }
                         return;
                     }
 
@@ -3962,6 +4134,8 @@ class MultiplayerManager {
                 this.playerReadyStatus.set(this.currentPlayer.id, !isReady);
                 this.updatePlayerReadyButton();
                 this.updatePlayerDisplay();
+                // 别让玩家以为是「点了没反应」：说清楚是网络没发出去
+                this._showNetNotice('网络不稳，准备状态没发出去，请再点一次准备', { tone: 'error', autoHide: 5000 });
             }
             return;
         }

@@ -8,8 +8,7 @@
     "start": "npm run start:backend",
     "install:all": "npm install && cd backend && npm install",
     "test:auth": "node backend/test-auth.mjs",
-    "test:monopoly": "node tools/monopoly-drive.mjs",
-    "test:monopoly-stats": "node backend/test-monopoly-stats.mjs"
+    "test:flight-room": "node backend/test-flight-room.mjs"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

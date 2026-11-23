@@ -1,5 +1,22 @@
 import { playerIdManager } from './playerIdManager.js';
 
+// 断线期间允许排队的消息：只放「重复发一次也没副作用」的。
+// 建房 / 进房 / 退房 / 准备 / 开局这些改状态的消息一律不补发 ——
+// 以前重连时把 createRoom 一起补发，会把所有人正在坐的那间房顶掉，
+// 对手端收到 roomGone 就直接被送回大厅，看起来就是「点了准备就闪退」。
+const REPLAYABLE_TYPES = new Set([
+    'identify',
+    'update_nickname',
+    'update_emoji',
+    'audioEnabledChange',
+    'audioLoaded',
+    'audioReady',
+    'player_stats',
+    'listRooms',
+    'snapshotRequest',
+    'ping',
+]);
+
 export class WebSocketClient {
     constructor() {
         this.ws = null;
@@ -52,11 +69,20 @@ export class WebSocketClient {
      * @returns {Promise<boolean>} - 连接是否成功
      */
     connect(serverUrl = null) {
-        return new Promise((resolve, reject) => {
+        // 已经有一条在连/已连上的 socket 就别再开第二条：
+        // 同一个 playerId 两条连接会触发服务端「新连接顶掉旧连接」，两边互相踢，
+        // 形成每秒重连一次的循环（线上日志里成片的「已登录连接 / 断开连接」就是它）
+        if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
+            if (this._openPromise) return this._openPromise;
+            return Promise.resolve(true);
+        }
+
+        if (serverUrl) {
+            this.serverUrl = serverUrl;
+        }
+
+        this._openPromise = new Promise((resolve, reject) => {
             try {
-                if (serverUrl) {
-                    this.serverUrl = serverUrl;
-                }
                 this.ws = new WebSocket(this.serverUrl);
 
                 this.ws.onopen = (event) => {
@@ -74,7 +100,7 @@ export class WebSocketClient {
                 // 设置连接超时
                 setTimeout(() => {
                     if (!this.isConnected && this.ws) {
-                        this.ws.close();
+                        try { this.ws.close(); } catch { /* ignore */ }
                         reject(new Error('连接超时'));
                     }
                 }, 5000);
@@ -84,6 +110,10 @@ export class WebSocketClient {
                 reject(error);
             }
         });
+
+        // 连上/失败都要把单飞锁放掉，下一次才允许重新发起
+        this._openPromise.finally(() => { this._openPromise = null; }).catch(() => { /* 由调用方处理 */ });
+        return this._openPromise;
     }
 
     /**
@@ -124,7 +154,14 @@ export class WebSocketClient {
             return;
         }
 
-        // 断开时不要悄悄丢掉：攒起来，重连成功后立刻补发
+        // 断线期间：只有幂等消息值得补发。
+        // 建房/进房/离开这类消息补发的后果是「重连一次就换一间房」，
+        // 房间里另一位玩家会被判成房间没了直接弹回大厅，所以宁可丢掉也不重放。
+        if (!REPLAYABLE_TYPES.has(type)) {
+            console.warn('WebSocket未连接，丢弃非幂等消息:', type);
+            return;
+        }
+
         this.pendingMessages.push({ type, data });
         if (this.pendingMessages.length > 20) this.pendingMessages.shift();
         console.warn('WebSocket未连接，消息已排队:', type, data);
@@ -322,6 +359,12 @@ export class WebSocketClient {
     }
 
     onClose(event) {
+        // 旧 socket 迟到的 close：此时已经建了新连接，别让它触发一轮多余的重连
+        if (this.ws && event && event.target && this.ws !== event.target) {
+            console.log('忽略旧连接的关闭事件');
+            return;
+        }
+
         console.log('WebSocket连接已关闭:', event.code, event.reason);
         this.isConnected = false;
 

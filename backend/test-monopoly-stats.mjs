@@ -84,23 +84,32 @@ const before = (await api('/api/me/stats', null, 'GET')).json?.stats || { games:
 console.log(`账号 ${username}（${nickname}）已注册，当前战绩 ${before.games} 局 / ${before.wins} 胜\n`);
 
 // 驱动一局到结束（不抢大屏的活，只负责按合法动作点按钮）
-async function driveToEnd(roomRef, screen, onAct) {
+// 公网有延迟，用轮询等「新局面」而不是固定 sleep
+async function driveToEnd(roomRef, screen, onAct, maxActs = 200) {
   const played = () => screen.ws.send(JSON.stringify({ t: 'played', seq: roomRef.room.game.seq }));
+  const poll = async (pred, timeout = 8000, step = 60) => {
+    const t0 = Date.now();
+    while (Date.now() - t0 < timeout) {
+      if (pred()) return true;
+      await sleep(step);
+    }
+    return false;
+  };
   if (roomRef.room.showing) played();
   let acts = 0;
-  for (let guard = 0; guard < 3000 && acts < 90; guard++) {
+  for (let guard = 0; guard < 8000 && acts < maxActs; guard++) {
     const g = roomRef.room.game;
     if (!g || g.status !== 'playing') break;
-    if (roomRef.room.showing) { played(); await sleep(40); continue; }
+    if (roomRef.room.showing) { played(); await poll(() => !roomRef.room.showing, 6000); continue; }
     if (roomRef.room.waitingFor) {
       const w = onAct.wsOf(roomRef.room.waitingFor.pid);
       w?.send(JSON.stringify({ t: 'ack' }));
-      await sleep(40);
+      await sleep(80);
       continue;
     }
     const actorId = g.pending?.pid || g.players[g.order[g.turnIdx]].id;
     const opts = legalActions(g, actorId);
-    if (!opts.length) { await sleep(60); continue; }
+    if (!opts.length) { await sleep(80); continue; }
     const pick = opts.find((o) => o.type === 'roll')
       || opts.find((o) => o.type === 'buy' && o.build === 2)
       || opts.find((o) => o.type === 'buy')
@@ -112,11 +121,12 @@ async function driveToEnd(roomRef, screen, onAct) {
       || opts.find((o) => o.type === 'skip')
       || opts[0];
     const ws = onAct.wsOf(actorId);
-    if (!ws || ws.readyState !== 1) { await sleep(80); continue; }
+    if (!ws || ws.readyState !== 1) { await sleep(100); continue; }
+    const seqBefore = g.seq;
     ws.send(JSON.stringify({ t: 'act', action: pick }));
     acts++;
-    await sleep(80);
-    if (roomRef.room.showing) { played(); await sleep(40); }
+    await poll(() => roomRef.room.game.seq !== seqBefore || roomRef.room.game.status !== 'playing', 8000);
+    if (roomRef.room.showing) { played(); await poll(() => !roomRef.room.showing, 6000); }
   }
   return acts;
 }

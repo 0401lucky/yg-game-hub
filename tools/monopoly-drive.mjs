@@ -49,21 +49,31 @@ console.log('开局:', room.game.players.map((p) => `${p.name}$${p.cash}`).join(
 const wsOf = (pid) => (room.game.players.find((x) => x.id === pid).avatar === '1f436' ? A : B);
 // 大屏「演完了这一步」：序号要用游戏当前的 seq
 const played = () => screen.send(JSON.stringify({ t: 'played', seq: room.game.seq }));
+// 等条件成立（公网有延迟，别用固定 sleep 猜）
+const poll = async (pred, timeout = 5000, step = 25) => {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if (pred()) return true;
+    await sleep(step);
+  }
+  return false;
+};
+const MAX_ACTS = Number(process.env.MAX_ACTS || 200);
 played();
 await sleep(150);
 
 const seen = new Map();
 let acts = 0, guard = 0;
-while (acts < 80 && guard < 3000) {
+while (acts < MAX_ACTS && guard < 6000) {
   guard++;
   const g = room.game;
   if (!g || g.status !== 'playing') break;
-  if (room.showing) { played(); await sleep(40); continue; }
-  if (room.waitingFor) { wsOf(room.waitingFor.pid).send(JSON.stringify({ t: 'ack' })); await sleep(40); continue; }
+  if (room.showing) { played(); await poll(() => !room.showing, 4000); continue; }
+  if (room.waitingFor) { wsOf(room.waitingFor.pid)?.send(JSON.stringify({ t: 'ack' })); await sleep(80); continue; }
 
   const actorId = g.pending?.pid || g.players[g.order[g.turnIdx]].id;
   const opts = legalActions(g, actorId);
-  if (!opts.length) { await sleep(60); continue; }
+  if (!opts.length) { await sleep(80); continue; }
   const pick = opts.find((o) => o.type === 'roll')
     || opts.find((o) => o.type === 'buy' && o.build === 2)
     || opts.find((o) => o.type === 'buy')
@@ -78,11 +88,13 @@ while (acts < 80 && guard < 3000) {
 
   const ws = wsOf(actorId);
   if (!ws || ws.readyState !== 1) { await sleep(100); continue; }
+  const seqBefore = g.seq;
   ws.send(JSON.stringify({ t: 'act', action: pick }));
   acts++;
-  await sleep(90);
+  const moved = await poll(() => room.game.seq !== seqBefore || room.game.status !== 'playing', 6000);
   for (const ev of room.game.events || []) seen.set(ev.k, (seen.get(ev.k) || 0) + 1);
-  if (room.showing) { played(); await sleep(40); }
+  if (!moved) console.log(`  (${pick.type} 没等到新局面，继续)`);
+  if (room.showing) { played(); await poll(() => !room.showing, 4000); }
 }
 
 const g = room.game;

@@ -1,7 +1,8 @@
 // 账号 API + WS 身份绑定验证
 import WebSocket from 'ws';
 
-const BASE = 'http://127.0.0.1:3001';
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:3001';
+const WS_BASE = BASE.replace(/^http/, 'ws');
 let cookie = '';
 const results = [];
 const ok = (name, cond, extra = '') => {
@@ -69,7 +70,7 @@ const anon = await fetch(BASE + '/api/me/stats');
 ok('未登录访问战绩被拦', anon.status === 401);
 
 // 9 WS：带 Cookie 建房，昵称应取账号昵称而非客户端传的昵称
-const ws = new WebSocket('ws://127.0.0.1:3001', { headers: { Cookie: cookie } });
+const ws = new WebSocket(WS_BASE, { headers: { Cookie: cookie } });
 const inbox = [];
 ws.on('message', (raw) => { try { inbox.push(JSON.parse(raw.toString())); } catch {} });
 await new Promise((res) => ws.on('open', res));
@@ -80,7 +81,7 @@ const hostNick = created?.room?.players?.[0]?.nickname;
 ok('WS 握手识别账号并覆盖昵称', hostNick === 'YG', `房间=${created?.room?.code} 昵称=${hostNick}`);
 
 // 10 无 Cookie 的 WS 仍可匿名建房
-const anonWs = new WebSocket('ws://127.0.0.1:3001');
+const anonWs = new WebSocket(WS_BASE);
 const anonInbox = [];
 anonWs.on('message', (raw) => { try { anonInbox.push(JSON.parse(raw.toString())); } catch {} });
 await new Promise((res) => anonWs.on('open', res));

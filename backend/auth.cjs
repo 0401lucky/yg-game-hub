@@ -374,6 +374,18 @@ function statsOf(userId) {
 
 // -------------------------- 限流 --------------------------
 
+/**
+ * 真实客户端 IP：服务在 Cloudflare 隧道 / 反向代理之后时 req.ip 恒为 127.0.0.1，
+ * 直接用它会把全站用户算成同一个人，限流会误伤。
+ */
+function clientIp(req) {
+  const cf = req.headers['cf-connecting-ip'];
+  if (cf) return String(cf).split(',')[0].trim();
+  const xff = req.headers['x-forwarded-for'];
+  if (xff) return String(xff).split(',')[0].trim();
+  return req.ip || 'unknown';
+}
+
 const attempts = new Map(); // key → { count, resetAt }
 
 function tooManyAttempts(key, limit = 8, windowMs = 60 * 1000) {
@@ -406,7 +418,7 @@ function mountAuthRoutes(app) {
 
   app.post('/api/auth/register', (req, res) => {
     try {
-      const ip = req.ip || 'unknown';
+      const ip = clientIp(req);
       if (tooManyAttempts(`reg:${ip}`)) {
         return res.status(429).json({ success: false, error: '操作太频繁，请稍后再试' });
       }
@@ -439,7 +451,7 @@ function mountAuthRoutes(app) {
 
   app.post('/api/auth/login', (req, res) => {
     try {
-      const ip = req.ip || 'unknown';
+      const ip = clientIp(req);
       const username = cleanText(req.body?.username, 20);
       if (tooManyAttempts(`login:${ip}:${username}`)) {
         return res.status(429).json({ success: false, error: '尝试次数过多，请 1 分钟后再试' });

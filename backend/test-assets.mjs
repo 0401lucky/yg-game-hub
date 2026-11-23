@@ -1,5 +1,5 @@
 // 静态资源完整性检查：抓 HTML 里所有本地引用，逐个请求确认可访问
-const BASE = 'http://127.0.0.1:3001';
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:3001';
 const pages = [
   '/',
   '/games/flight/',

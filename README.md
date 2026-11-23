@@ -125,32 +125,59 @@ match_players(id, match_id, user_id, player_id, nickname, color, is_winner)
 
 ## 部署
 
+线上地址：**https://games.lucky0625.us.ci**
+
+链路：GitHub Actions 构建镜像 → GHCR → 服务器 `docker compose` 拉取重启 → Cloudflare Tunnel 对外。
+
+```
+push main → Actions 构建 ghcr.io/0401lucky/yg-game-hub:latest
+          → SSH 到服务器 /opt/yg-games 执行 compose pull && up -d
+          → cloudflared 隧道把 games.lucky0625.us.ci 转到 127.0.0.1:3007
+```
+
+服务器上不开放 80/443，只监听回环端口，全部走隧道，UFW 不用改。
+
+### 首次部署（已完成，仅记录）
+
 ```bash
-cd backend
-npm install --omit=dev
-pm2 start server.cjs --name game-hub
-pm2 save && pm2 startup
+# 服务器
+mkdir -p /opt/yg-games/data
+cd /opt/yg-games
+printf 'SESSION_SECRET=%s\n' "$(openssl rand -hex 32)" > .env && chmod 600 .env
+# docker-compose.yml 见 deploy/docker-compose.yml
+docker compose up -d
+
+# 隧道（独立 tunnel，不影响机器上已有的 cloudflared 服务）
+cloudflared tunnel create yg-games
+cloudflared tunnel route dns yg-games games.lucky0625.us.ci
+systemctl enable --now cloudflared-games   # 配置见 deploy/tunnel-setup.sh
 ```
 
-Nginx 反代要点（少一条联机就废）：
+### 日常运维
 
-```nginx
-location / {
-    proxy_pass http://127.0.0.1:3001;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;      # WebSocket 握手必需
-    proxy_set_header Connection "upgrade";       # WebSocket 握手必需
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_read_timeout 3600s;                    # 长连接别被 60s 掐断
-}
+```bash
+ssh yunyou
+cd /opt/yg-games
+docker compose logs -f --tail 100        # 看日志
+docker compose restart                   # 重启
+docker compose pull && docker compose up -d   # 手动更新（平时由 CI 完成）
 ```
 
-上了 HTTPS 后，在 `backend/.env` 里设 `COOKIE_SECURE=1`，Cookie 才会带 `Secure`。
+数据都在 `/opt/yg-games/data`（账号库 `app.db` + 每日统计）。**备份就打包这个目录。**
 
-备份只需要打包 `backend/data/`（账号库 + 会话密钥 + 每日统计）。
+### 仓库 secrets
+
+| 名称 | 用途 |
+|---|---|
+| `SSH_HOST` | 服务器地址 |
+| `SSH_USER` | 登录用户 |
+| `SSH_PORT` | SSH 端口 |
+| `SSH_KEY` | 部署专用私钥（对应服务器的 authorized_keys） |
+
+镜像在公开仓库下自动继承为公开，服务器无需 `docker login`。
 
 ---
+
 
 ## 测试
 

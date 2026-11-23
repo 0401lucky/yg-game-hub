@@ -1,0 +1,12 @@
+# 统一 LF：容器与服务器都是 Linux，CRLF 会让 bash 脚本报 $'\r'
+* text=auto eol=lf
+
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.wav binary

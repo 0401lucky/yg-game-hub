@@ -1,0 +1,61 @@
+{
+  "site": {
+    "title": "游戏大厅",
+    "subtitle": "自己开的几个小游戏，和朋友联机用",
+    "owner": "YG"
+  },
+  "games": [
+    {
+      "id": "flight",
+      "name": "飞行棋",
+      "subtitle": "极简飞行棋",
+      "emoji": "✈️",
+      "accent": "#a6d8b7",
+      "accentSoft": "#e6f5ec",
+      "desc": "经典跳子、飞棋、叠子、连投惩罚全规则。支持 2-4 人联机、房间码开局、AI 托管、观战与对局回放。",
+      "path": "/games/flight/",
+      "status": "online",
+      "players": "2-4 人",
+      "tags": ["联机", "房间码", "AI 托管", "观战回放"]
+    },
+    {
+      "id": "gomoku",
+      "name": "五子棋",
+      "subtitle": "待开发",
+      "emoji": "⚫",
+      "accent": "#afccea",
+      "accentSoft": "#e9f2fb",
+      "desc": "15×15 棋盘，禁手规则可选，房间码约战。计划复用同一套账号与房间体系。",
+      "path": "/games/gomoku/",
+      "status": "planned",
+      "players": "2 人",
+      "tags": ["1v1", "回合制"]
+    },
+    {
+      "id": "doudizhu",
+      "name": "斗地主",
+      "subtitle": "待开发",
+      "emoji": "🃏",
+      "accent": "#ecbd99",
+      "accentSoft": "#f9ede3",
+      "desc": "三人叫地主，底分与炸弹倍率结算。需要牌型识别与出牌校验引擎。",
+      "path": "/games/doudizhu/",
+      "status": "planned",
+      "players": "3 人",
+      "tags": ["三人局", "牌类"]
+    },
+    {
+      "id": "uno",
+      "name": "UNO",
+      "subtitle": "待开发",
+      "emoji": "🎴",
+      "accent": "#f7a099",
+      "accentSoft": "#fdf0ef",
+      "desc": "四人轮转、功能牌与 +2/+4 叠牌。玩法简单，适合聚会开场。",
+      "path": "/games/uno/",
+      "status": "planned",
+      "players": "2-6 人",
+      "tags": ["多人", "聚会"]
+    }
+  ]
+}

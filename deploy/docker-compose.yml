@@ -1,0 +1,19 @@
+services:
+  games:
+    image: ghcr.io/0401lucky/yg-game-hub:latest
+    container_name: yg-games
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3007:3001"
+    volumes:
+      - ./data:/app/backend/data
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      COOKIE_SECURE: "1"
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET 未设置}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

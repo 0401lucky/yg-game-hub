@@ -1,0 +1,288 @@
+/* 游戏门户样式：自带一套变量，account.css 直接复用 */
+
+:root {
+    --page-bg: #fbf8f3;
+    --page-bg-accent: radial-gradient(1200px 600px at 20% -10%, #eef7f1 0%, transparent 60%),
+                      radial-gradient(900px 500px at 100% 0%, #fdf1ec 0%, transparent 55%);
+    --surface: #ffffff;
+    --text-primary: #2d241f;
+    --text-gray: rgba(92, 83, 78, 0.85);
+    --border-soft: rgba(61, 53, 45, 0.22);
+    --border-medium: rgba(61, 53, 45, 0.4);
+    --border-light: rgba(61, 53, 45, 0.75);
+    --shadow-1: rgba(61, 53, 45, 0.08);
+    --shadow-2: rgba(61, 53, 45, 0.14);
+    --shadow-3: rgba(61, 53, 45, 0.22);
+    --player-1-color: #a6d8b7;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --page-bg: #1d1a18;
+        --page-bg-accent: radial-gradient(1200px 600px at 20% -10%, #223028 0%, transparent 60%),
+                          radial-gradient(900px 500px at 100% 0%, #2f2523 0%, transparent 55%);
+        --surface: #262321;
+        --text-primary: #efe8de;
+        --text-gray: rgba(226, 219, 208, 0.72);
+        --border-soft: rgba(226, 219, 208, 0.2);
+        --border-medium: rgba(226, 219, 208, 0.42);
+        --border-light: rgba(226, 219, 208, 0.78);
+        --shadow-1: rgba(0, 0, 0, 0.4);
+        --shadow-2: rgba(0, 0, 0, 0.55);
+        --shadow-3: rgba(0, 0, 0, 0.7);
+        --player-1-color: #6fae86;
+    }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 76px 20px 40px;
+    background: var(--page-bg);
+    background-image: var(--page-bg-accent);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+.hub-wrap {
+    max-width: 1060px;
+    margin: 0 auto;
+}
+
+/* ---------- 头部 ---------- */
+
+.hub-head {
+    margin-bottom: 28px;
+}
+
+.hub-title {
+    margin: 0 0 8px;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.hub-title .hub-dot { color: #a6d8b7; }
+
+.hub-subtitle {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--text-gray);
+}
+
+.hub-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.hub-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+    font-size: 12px;
+    color: var(--text-gray);
+    box-shadow: 0 1px 6px var(--shadow-1);
+}
+
+.hub-pill b { color: var(--text-primary); font-size: 13px; }
+
+.hub-live {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #35ae61;
+    box-shadow: 0 0 0 3px rgba(53, 174, 97, 0.18);
+}
+
+/* ---------- 游戏网格 ---------- */
+
+.hub-section-title {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 30px 0 14px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-gray);
+}
+
+.hub-section-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-soft);
+}
+
+.hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+    gap: 16px;
+}
+
+.hub-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+    border: 1.5px solid var(--border-soft);
+    background: var(--surface);
+    box-shadow: 0 2px 12px var(--shadow-1);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.hub-card.live:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px var(--shadow-2);
+    border-color: var(--border-medium);
+}
+
+.hub-card.soon {
+    border-style: dashed;
+    opacity: 0.72;
+    cursor: default;
+}
+
+.hub-card-art {
+    height: 104px;
+    display: grid;
+    place-items: center;
+    font-size: 42px;
+    line-height: 1;
+    position: relative;
+}
+
+.hub-card-art::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 70%);
+    pointer-events: none;
+}
+
+.hub-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    background: rgba(255, 255, 255, 0.86);
+    color: #2d241f;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+}
+
+.hub-badge.soon-badge {
+    background: rgba(45, 36, 31, 0.78);
+    color: #fff;
+}
+
+.hub-card-body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.hub-card-name {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.hub-card-name small {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-gray);
+}
+
+.hub-card-desc {
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--text-gray);
+    margin: 0;
+    flex: 1;
+}
+
+.hub-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.hub-tag {
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border-soft);
+    font-size: 10.5px;
+    color: var(--text-gray);
+}
+
+.hub-cta {
+    margin-top: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.hub-cta-muted { color: var(--text-gray); font-weight: 600; }
+
+/* ---------- 页脚 ---------- */
+
+.hub-foot {
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-soft);
+    font-size: 11.5px;
+    color: var(--text-gray);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.hub-foot a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---------- 骨架屏 ---------- */
+
+.hub-skeleton {
+    height: 236px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border-soft);
+    background: linear-gradient(100deg, var(--surface) 30%, rgba(128, 128, 128, 0.08) 50%, var(--surface) 70%);
+    background-size: 220% 100%;
+    animation: hub-shimmer 1.2s infinite linear;
+}
+
+@keyframes hub-shimmer {
+    from { background-position: 180% 0; }
+    to { background-position: -80% 0; }
+}
+
+@media (max-width: 600px) {
+    body { padding: 68px 14px 28px; }
+    .hub-grid { grid-template-columns: 1fr; }
+    .hub-foot { flex-direction: column; gap: 6px; }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "yg-game-hub",
+  "version": "1.0.0",
+  "description": "多人联机小游戏合集：门户 + 各游戏 + 共享账号体系",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "start:backend": "cd backend && npm start",
+    "start": "npm run start:backend",
+    "install:all": "npm install && cd backend && npm install",
+    "test:auth": "node backend/test-auth.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "workspaces": [
+    "backend"
+  ]
+}

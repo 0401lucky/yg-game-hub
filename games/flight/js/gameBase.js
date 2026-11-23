@@ -93,7 +93,7 @@ export class FlyingChessGameBase {
 
     // 更新页面标题
     updatePageTitle(gameConfig) {
-        let titleText = '极简飞行棋';
+        let titleText = '飞行棋';
 
         try {
             if (gameConfig.mode === 'local_multiplayer') {
@@ -127,7 +127,7 @@ export class FlyingChessGameBase {
             document.title = titleText;
         } catch (error) {
             console.error('更新页面标题失败:', error);
-            document.title = '极简飞行棋';
+            document.title = '飞行棋';
         }
     }
 
@@ -523,10 +523,10 @@ export function createGameRuntime(GameClass) {
                     gameInstance.updatePageTitle(gameConfig);
                 } catch (error) {
                     console.error('更新页面标题失败:', error);
-                    document.title = '极简飞行棋';
+                    document.title = '飞行棋';
                 }
             } else {
-                document.title = '极简飞行棋';
+                document.title = '飞行棋';
             }
         }
     }

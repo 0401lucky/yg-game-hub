@@ -20,7 +20,7 @@ window.addEventListener('load', () => {
 class GameTipsCarousel {
     constructor() {
         this.tips = [
-            "这是由ZTMYO个人开发的网页游戏",
+            "这是给朋友们自己开的飞行棋服务器",
             "按F11进入全屏模式，获得最佳游戏体验",
             "AI玩家投掷的点数也是完全随机的",
             "困难AI会智能分析局势，优先发起进攻",

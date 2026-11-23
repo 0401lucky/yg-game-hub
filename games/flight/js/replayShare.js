@@ -81,10 +81,10 @@ export function replaySummary(archive) {
     };
 }
 
-/** 下载用的文件名：[极简飞行棋]人机3人3子道具欢乐-abcd.json */
+/** 下载用的文件名：[飞行棋]人机3人3子道具欢乐-abcd.json */
 export function replayFileName(archive) {
     const summary = replaySummary(archive);
-    return `[极简飞行棋]${summary.mode}${summary.players}人${summary.pieces}子${summary.kind}-${replayTag()}.json`;
+    return `[飞行棋]${summary.mode}${summary.players}人${summary.pieces}子${summary.kind}-${replayTag()}.json`;
 }
 
 /** 人机 / 联机各存各的最近 RECENT_MAX 场；本地多人不留档 */

@@ -4911,6 +4911,7 @@ use[href="#checkmark"] {
     user-select: all;
 }
 .index-footer .heart {
+    color: #f2687b;
     display: inline-flex;
     align-items: center;
     justify-content: center;

@@ -16,7 +16,7 @@ function updatePageTitle() {
             console.error('更新页面标题失败:', error);
         }
     }
-    document.title = '极简飞行棋';
+    document.title = '飞行棋';
 }
 
 class AITakeoverManager {

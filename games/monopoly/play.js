@@ -1280,12 +1280,14 @@ const textOf = (html) => { const d = document.createElement('div'); d.innerHTML 
 // 手机要扫的地址：
 //  - 大屏在本机/局域网打开 → 用服务器算好的局域网 IP（手机同一个 Wi-Fi 才能连）
 //  - 大屏在公网域名打开（Cloudflare 隧道等）→ 用当前 origin，扫码直接走公网
+function isLanHost() {
+  const host = location.hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1'
+    || /^192\.168\./.test(host) || /^10\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+}
 function joinUrlOf(room) {
   if (!room) return '';
-  const host = location.hostname;
-  const lan = host === 'localhost' || host === '127.0.0.1' || host === '::1'
-    || /^192\.168\./.test(host) || /^10\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host);
-  return lan ? room.joinUrl : location.origin + room.joinPath;
+  return isLanHost() ? room.joinUrl : location.origin + room.joinPath;
 }
 
 // 大屏弹框改成等手机确认：告诉服务器等谁，返回大屏按钮上的字；本地模式或没人可等时返回 null
@@ -1505,7 +1507,7 @@ async function showPartyLobby() {
           <div class="qr" id="qr"></div>
           <div class="pq-code"><span>房间</span><b>${esc(r.code)}</b></div>
           <div class="pq-url">${esc(joinUrlOf(r))}</div>
-          <p class="pq-tip">手机和这台电脑连同一个 Wi-Fi，打开相机扫码</p>
+          <p class="pq-tip">${isLanHost() ? '手机和这台电脑连同一个 Wi-Fi，打开相机扫码' : '手机扫这个码就进来，不用同一个 Wi-Fi'}</p>
         </div>
         <div class="party-side">
           <div class="setup-top"><span class="globe big"></span><div><h1>客厅大富翁</h1><p class="sub">扫码进房 · 手机上选角色 · ${DURATION_MIN} 分钟一局 · 起始资金 ${money(START_CASH)}</p></div></div>

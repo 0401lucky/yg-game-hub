@@ -89,7 +89,7 @@ function render() {
       <div class="claim">${free.map(f => `<button class="char" data-claim="${f.id}">
         ${f.avatar ? `<img src="./avatars/${f.avatar}.webp" alt="">` : '<b>?</b>'}<span>${esc(f.name || '还没起名')}</span></button>`).join('')}</div>`);
   }
-  if (!S.room) return (app.innerHTML = notice('1f914', '正在连接…', '手机和电脑要连同一个 Wi-Fi'));
+  if (!S.room) return (app.innerHTML = notice('1f914', '正在连接…', '进房中，稍等一下'));
   if (S.room.status === 'waiting') return renderPick(app);
   renderPlaying(app);
 }

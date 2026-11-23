@@ -3631,8 +3631,14 @@ app.use(
   express.static(path.resolve(__dirname, '../games'), {
     extensions: ['html'], // /games/flight/game 也能命中 game.html
     setHeaders: (res, filePath) => {
-      // 源码页面免缓存，避免更新后玩家拿到旧脚本
-      if (/\.(html|js|mjs|css)$/i.test(filePath)) res.setHeader('Cache-Control', 'no-cache');
+      // 源码页面免缓存，避免更新后玩家拿到旧脚本。
+      // no-store 是给 Cloudflare 看的：它默认会把 js/css 缓存 4 小时并改写 Cache-Control，
+      // 明确 no-store 才能让边缘和浏览器都每次回源（代价是静态资源不再走 CDN 缓存）。
+      if (/\.(html|js|mjs|css)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
     }
   })
 );

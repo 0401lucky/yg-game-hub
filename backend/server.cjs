@@ -17,6 +17,7 @@ const {
 } = require('./roomManager.cjs');
 const { DailyStats } = require('./dailyStats.cjs');
 const auth = require('./auth.cjs');
+const { DoudizhuService } = require('./doudizhu.cjs');
 
 const app = express();
 const server = http.createServer(app);
@@ -64,6 +65,10 @@ function sanitizeText(input) {
 }
 
 loadBannedWords();
+
+// 独立消息协议与房间领域，复用端口、账号 Cookie 和静态托管。
+const doudizhu = new DoudizhuService({ auth, sanitizeText });
+app.get('/api/doudizhu/rooms', (req, res) => res.json({ rooms: doudizhu.listRooms() }));
 
 // -------------------------- 工具函数（抽离通用逻辑）--------------------------
 /**
@@ -990,6 +995,10 @@ function forceDetachPlayerFromExistingContexts(playerId, nextRoomCode = null, is
 }
 
 wss.on('connection', (ws, req) => {
+  if (new URL(req.url, 'http://localhost').pathname === '/ws/doudizhu') {
+    doudizhu.handleConnection(ws, req);
+    return;
+  }
   let playerId = null;
 
   // 账号身份：浏览器握手时会自动带上 Cookie，在这里解析出登录用户
@@ -3734,6 +3743,7 @@ function startServer() {
     console.log(`WebSocket服务器运行在 ws://localhost:${PORT}`);
     console.log(`\n游戏大厅: http://localhost:${PORT}/`);
     console.log(`飞行棋:   http://localhost:${PORT}/games/flight/`);
+    console.log(`斗地主:   http://localhost:${PORT}/games/doudizhu/`);
     console.log(`管理面板: http://localhost:${PORT}/games/flight/admin.html`);
     console.log(`\n查询接口:`);
     console.log(`  - 房间列表: http://localhost:${PORT}/api/rooms`);

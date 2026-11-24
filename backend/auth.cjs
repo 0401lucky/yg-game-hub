@@ -275,7 +275,7 @@ function nicknameForRequest(ws, fallback) {
 
 // -------------------------- 战绩写入 --------------------------
 
-function recordMatch({ gameId = 'flight', roomCode, mode, players, winnerColor, durationMs }) {
+function recordMatch({ gameId = 'flight', roomCode, mode, players, winnerColor, winnerColors, durationMs }) {
   if (!enabled || !Array.isArray(players) || !players.length) return null;
   try {
     const withUser = players
@@ -283,7 +283,8 @@ function recordMatch({ gameId = 'flight', roomCode, mode, players, winnerColor, 
       .filter((p) => p.userId);
     if (!withUser.length) return null;
 
-    const winner = withUser.find((p) => Number(p.color) === Number(winnerColor));
+    const winningColors = new Set((Array.isArray(winnerColors) ? winnerColors : winnerColor == null ? [] : [winnerColor]).map(Number));
+    const winner = withUser.find((p) => winningColors.has(Number(p.color)));
     const endedAt = new Date().toISOString();
     const info = db
       .prepare(
@@ -310,7 +311,7 @@ function recordMatch({ gameId = 'flight', roomCode, mode, players, winnerColor, 
         p.playerId || null,
         p.nickname || null,
         Number.isFinite(Number(p.color)) ? Number(p.color) : null,
-        winner && p.userId === winner.userId ? 1 : 0
+        winningColors.has(Number(p.color)) ? 1 : 0
       );
     }
     console.log(`[战绩] 记录对局 #${matchId} 房间 ${roomCode || '-'} 参与账号 ${withUser.length}`);

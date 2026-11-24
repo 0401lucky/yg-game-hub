@@ -2,13 +2,15 @@
 
 自建的多人在线小游戏合集：一个门户页 + 若干可插拔的游戏，共用一套账号与服务器。
 
-当前已上线一款：
+当前已实现两款：
 
 - **飞行棋**（完整中文规则、房间码联机、AI 托管、观战回放）
+- **斗地主 · 午夜牌桌**（1-3 位真人、简单／困难／地狱人机、精致牌面与动画、房间码联机、托管与重连）
 
 ```
 浏览器 ──┬─ /                     游戏大厅（门户）
          ├─ /games/flight/        飞行棋
+         ├─ /games/doudizhu/      斗地主
          ├─ /api/auth/*           账号（注册/登录/退出）
          ├─ /api/me/stats         个人战绩
          └─ /api/client-error     前端异常上报（排查手机端闪退用）
@@ -27,6 +29,7 @@ backend/
   roomManager.cjs      房间/会话领域模型（飞行棋）
   authority.cjs        对局权威状态机（飞行棋）
   botDriver.cjs        服务端 AI 托管驱动（飞行棋）
+  doudizhu.cjs         斗地主房间、私有手牌快照、服务端回合与人机驱动
   dailyStats.cjs       每日统计（JSON 落盘）
   data/                运行期数据（app.db / stats.json / 会话密钥），已 gitignore
   test-auth.mjs        账号链路测试
@@ -38,6 +41,7 @@ games/
   shared/              飞行棋共用的规则引擎（engine / bot / replayCodec / timing）
   flight/              飞行棋：index.html（大厅）game.html（对局）spectate/replay/stats/admin
     public/            音效与图标，按 vite 语义叠加到 /games/flight/ 根路径
+  doudizhu/            斗地主：牌桌界面、engine.mjs 规则、bot.mjs 三档人机、生成素材
 
 web/                   门户：index.html + css/hub.css + js/hub.js
   games.json           游戏注册表（新增游戏只改这里）
@@ -58,6 +62,8 @@ node server.cjs
 ```
 
 打开 http://localhost:3001 就是大厅，点飞行棋进入。
+
+斗地主直接打开 http://localhost:3001/games/doudizhu/。两个人玩时创建好友房，把六位房间码或邀请链接给朋友，第三个座位默认有人机；具体规则和人机机制见 [斗地主说明](docs/斗地主.md)。
 
 **不需要登录也能玩**；登录只是把昵称绑定到账号、把对局战绩存下来。
 
@@ -188,6 +194,7 @@ docker compose pull && docker compose up -d   # 手动更新（平时由 CI 完�
 ```bash
 npm run test:auth      # 注册/登录/限流/篡改签名/WS 身份绑定
 npm run test:flight-room  # 飞行棋房间链路：建房幂等、准备广播、过期房间错误码
+npm run test:doudizhu     # 斗地主规则、人机对局、联机恢复、农民双人胜场
 node backend/test-stats.mjs    # 战绩写入与读回（飞行棋）
 node backend/test-assets.mjs   # 页面引用的静态资源是否全部可达
 ```

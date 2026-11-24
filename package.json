@@ -8,7 +8,8 @@
     "start": "npm run start:backend",
     "install:all": "npm install && cd backend && npm install",
     "test:auth": "node backend/test-auth.mjs",
-    "test:flight-room": "node backend/test-flight-room.mjs"
+    "test:flight-room": "node backend/test-flight-room.mjs",
+    "test:doudizhu": "node --test backend/test-doudizhu.mjs backend/test-doudizhu-room.mjs backend/test-doudizhu-account.mjs"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

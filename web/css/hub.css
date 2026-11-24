@@ -174,8 +174,18 @@ body {
     pointer-events: none;
 }
 
+.hub-card-art > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 70% 45%;
+}
+
 .hub-badge {
     position: absolute;
+    z-index: 1;
     top: 12px;
     right: 12px;
     padding: 4px 10px;

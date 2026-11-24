@@ -26,9 +26,16 @@
     var node = el(isLive ? 'a' : 'div', 'hub-card ' + (isLive ? 'live' : 'soon'));
     if (isLive) node.href = game.path;
 
-    var art = el('div', 'hub-card-art', game.emoji || '🎮');
+    var art = el('div', 'hub-card-art', game.cover ? '' : game.emoji || '🎮');
     art.style.background = 'linear-gradient(135deg, ' + (game.accentSoft || '#eee') + ', ' +
       (game.accent || '#ddd') + ')';
+    if (game.cover) {
+      var cover = document.createElement('img');
+      cover.src = game.cover;
+      cover.alt = '';
+      cover.loading = 'lazy';
+      art.appendChild(cover);
+    }
     art.appendChild(el('span', 'hub-badge' + (isLive ? '' : ' soon-badge'), isLive ? '可玩' : '即将上线'));
     node.appendChild(art);
 
@@ -85,15 +92,20 @@
   }
 
   function updateStatus() {
-    fetch('/api/rooms', { credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
+    Promise.all([
+      fetch('/api/rooms', { credentials: 'same-origin' }).then(function (r) { return r.json(); }),
+      fetch('/api/doudizhu/rooms', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).catch(function () { return { rooms: [] }; })
+    ])
+      .then(function (sources) {
+        var data = sources[0];
+        var cardRooms = sources[1].rooms || [];
         var rooms = data.totalRooms || 0;
         var players = 0;
         (data.rooms || []).forEach(function (room) {
           players += (room.players || []).filter(function (p) { return p.isConnected; }).length;
         });
-        setPill('hubRooms', rooms);
+        cardRooms.forEach(function (room) { players += room.humans || 0; });
+        setPill('hubRooms', rooms + cardRooms.length);
         setPill('hubPlayers', players);
       })
       .catch(function () { /* 在线概况拿不到不影响玩 */ });

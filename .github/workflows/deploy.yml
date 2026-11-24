@@ -75,7 +75,6 @@ jobs:
             cd /opt/yg-games
             docker compose pull
             docker compose up -d
-            docker image prune -f
             sleep 3
             docker compose ps
             curl -fsS -o /dev/null -w "健康检查 HTTP %{http_code}\n" http://127.0.0.1:3007/api/auth/me

@@ -2,6 +2,7 @@
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:3001';
 const pages = [
   '/',
+  '/games/doudizhu/',
   '/games/flight/',
   '/games/flight/game.html',
   '/games/flight/spectate.html',
@@ -29,7 +30,7 @@ async function check(url, from) {
   try {
     const res = await fetch(url, { redirect: 'manual' });
     status = res.status;
-    if (status === 200 && url.endsWith('.js')) {
+    if (status === 200 && /\.(m?js)(?:\?|$)/.test(url)) {
       const text = await res.text();
       for (const m of text.matchAll(importRe)) {
         const abs = resolveRef(m[1], new URL(url).pathname);

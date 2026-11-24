@@ -34,15 +34,16 @@
     {
       "id": "doudizhu",
       "name": "斗地主",
-      "subtitle": "待开发",
+      "subtitle": "午夜牌桌",
       "emoji": "🃏",
+      "cover": "/games/doudizhu/assets/lounge-hero.webp",
       "accent": "#ecbd99",
       "accentSoft": "#f9ede3",
-      "desc": "三人叫地主，底分与炸弹倍率结算。需要牌型识别与出牌校验引擎。",
+      "desc": "深绿牌桌，精致牌面。和朋友用房间码开局，空位交给简单、困难或地狱人机；完整叫分、牌型、炸弹与春天结算。",
       "path": "/games/doudizhu/",
-      "status": "planned",
-      "players": "3 人",
-      "tags": ["三人局", "牌类"]
+      "status": "online",
+      "players": "1-3 人",
+      "tags": ["好友联机", "三档人机", "经典规则"]
     },
     {
       "id": "uno",

@@ -6,6 +6,7 @@
 
 ```
 GitHub(main) ──push──▶ Actions
+                        ├─ verify: Node 24 类型检查 → Vite → Node / Playwright 测试
                         ├─ build: Dockerfile → ghcr.io/0401lucky/yg-game-hub:latest + :<sha>
                         └─ deploy: SSH 到服务器 → docker compose pull && up -d → 健康检查
                                              │
@@ -13,6 +14,8 @@ Cloudflare 边缘 ──tunnel yg-games──▶ 127.0.0.1:3007 (容器 3001)
 ```
 
 服务器不开放 80/443，UFW 无需改动；流量全部走 Cloudflare Tunnel。
+
+镜像采用两阶段构建。构建层安装开发依赖并完成类型检查与前端打包，运行层仅安装 Express / ws / dotenv，直接执行 `node backend/server.ts`。账号与统计的数据卷路径仍为 `/app/backend/data`，已有 compose 挂载无需迁移。
 
 ## 服务器上的东西
 

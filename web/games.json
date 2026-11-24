@@ -46,6 +46,20 @@
       "tags": ["好友联机", "三档人机", "经典规则"]
     },
     {
+      "id": "minesweeper",
+      "name": "扫雷",
+      "subtitle": "林间探险",
+      "emoji": "🚩",
+      "cover": "/games/minesweeper/assets/forest-hero.webp",
+      "accent": "#a6d8b7",
+      "accentSoft": "#eef5e9",
+      "desc": "一格一格，探索小小世界。三档雷区、首击保护、每日同图挑战；支持长按插旗、暂停与刷新续玩，随时来一局。",
+      "path": "/games/minesweeper/",
+      "status": "online",
+      "players": "1 人",
+      "tags": ["经典推理", "每日挑战", "随时开玩"]
+    },
+    {
       "id": "uno",
       "name": "UNO",
       "subtitle": "待开发",

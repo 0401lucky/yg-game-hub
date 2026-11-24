@@ -1,0 +1,881 @@
+/* 桌面端默认样式 */
+.players-top,
+.players-bottom {
+    display: none;
+}
+
+/* 游戏控制区域 */
+.game-controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 101;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    height: 100px;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+.game-controls-left {
+    flex: 0 0 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-controls-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 100px;
+    position: relative;
+}
+
+.game-controls-right {
+    flex: 0 0 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-icon {
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 2px 4px var(--shadow-2));
+    background: var(--glow-1);
+    border-radius: 8px;
+    padding: 4px;
+    color: var(--ui-default-color);
+}
+
+.chat-icon:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    filter: drop-shadow(0 4px 8px var(--shadow-2));
+    color: var(--ui-hover-color);
+}
+
+/* 闪电模式图标 */
+.lightning-icon {
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    padding: 4px;
+    color: var(--ui-default-color);
+}
+
+.lightning-icon:hover {
+    transform: scale(1.1);
+}
+
+.lightning-btn.active .lightning-icon {
+    color: var(--lightning);
+}
+
+/* 道具图标 */
+.skill-icon {
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 2px 4px var(--shadow-2));
+    background: var(--glow-1);
+    border-radius: 8px;
+    padding: 4px;
+    color: var(--ui-default-color);
+}
+
+.skill-icon:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 2px 4px var(--shadow-2));
+    color: var(--ui-hover-color);
+}
+
+/* 道具按钮容器 */
+.skill-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-base);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* 道具按钮提示动画 */
+@keyframes skill-btn-q-bounce {
+    0%, 100% { transform: scale(1); }
+    10% { transform: scale(1.15, 0.85); }
+    20% { transform: scale(0.85, 1.15); }
+    30% { transform: scale(1.1, 0.9); }
+    40% { transform: scale(0.95, 1.05); }
+    50% { transform: scale(1.02, 0.98); }
+}
+
+.skill-btn-hint {
+    animation: skill-btn-q-bounce 1s ease-in-out;
+}
+
+.skill-panel {
+    position: absolute;
+    bottom: 50px;
+    right: -2px;
+    width: 400px;
+    background: var(--bg-light-1);
+    border: 2px solid var(--border-medium);
+    border-radius: 12px;
+    box-shadow: var(--modal-shadow);
+    display: none;
+    z-index: 1000;
+}
+
+.skill-panel.show {
+    display: block;
+    animation: skillPanelSlideIn 0.2s ease-out;
+}
+
+/* 骰子位置的积分获得数值样式 */
+.energy-gain-text {
+    font-size: 32px;
+    color: var(--text-color, var(--gold));
+    text-shadow: 0 0 10px var(--shadow-2);
+    animation: energyGainFloat 1s ease-out;
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 90px;
+    width: 120px;
+    margin: 20px 0;
+    padding: 8px;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.energy-gain-text svg {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+/* 道具面板头部 */
+.skill-panel-header {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: var(--glow-1);
+}
+
+.skill-panel-header h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: bold;
+    text-shadow: none;
+}
+
+.skill-energy-hint {
+    font-size: 11px;
+    color: var(--font-faint);
+    text-align: center;
+    font-style: italic;
+}
+
+.skill-energy-display {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: bold;
+    text-shadow: none;
+}
+
+/* 道具面板内容 */
+.skill-panel-content {
+    padding: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+/* 道具项 */
+.skill-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--glow-1);
+    border: 2px solid var(--border-medium);
+    border-radius: var(--radius-base);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    transform: translateZ(0);
+    will-change: opacity, transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.skill-item:hover {
+    border-color: var(--border-light);
+    transform: translateY(-2px);
+}
+
+.skill-item.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+    filter: none;
+}
+
+.skill-item.active {
+    border-color: rgba(76, 175, 80, 0.8);
+    background: rgba(76, 175, 80, 0.08);
+    box-shadow: 0 1px 2px var(--shadow-1);
+}
+
+/* 道具图标容器 */
+.skill-icon-container {
+    flex-shrink: 0;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--border-soft);
+    border-radius: var(--radius-base);
+    color: var(--text-primary);
+    box-shadow: none;
+}
+
+.skill-item:hover .skill-icon-container {
+    border-color: var(--border-medium);
+    box-shadow: 0 1px 2px var(--border-soft);
+}
+
+/* 道具信息 */
+.skill-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    /* 确保在移动端浏览器下能够正确渲染 */
+    min-width: 0;
+    transform: translateZ(0);
+}
+
+.skill-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--text-primary);
+    text-shadow: none;
+}
+
+.skill-desc {
+    font-size: 12px;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.skill-cost {
+    font-size: 11px;
+    color: var(--text-primary-soft);
+    font-weight: bold;
+    text-shadow: none;
+}
+
+/* 道具面板滚动条 */
+.skill-panel-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.skill-panel-content::-webkit-scrollbar-track {
+    background: var(--glow-1);
+    border-radius: 3px;
+}
+
+.skill-panel-content::-webkit-scrollbar-thumb {
+    background: var(--border-soft);
+    border-radius: 3px;
+    box-shadow: 0 1px 2px var(--shadow-2);
+}
+
+.skill-panel-content::-webkit-scrollbar-thumb:hover {
+    background: var(--border-soft);
+    box-shadow: none;
+}
+
+/* 骰子图标 */
+.dice-icon {
+    font-size: 75px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-primary-soft);
+    position: relative;
+    z-index: 3;
+    margin: 20px 0;
+    line-height: 1;
+    height: 90px;
+    width: 120px;
+    box-sizing: border-box;
+    text-shadow: 0 2px 4px var(--glow-2);
+    border-radius: 12px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* 骰子未投掷状态 */
+.dice-icon.not-rolled {
+    color: var(--ui-default-color);
+    filter: drop-shadow(0 3px 6px var(--shadow-2));
+    text-shadow: 0 2px 4px var(--glow-2);
+}
+
+#mysteryBoxIcon svg,
+#teleportIcon svg {
+    width: 65px;
+    height: 65px;
+}
+
+.dice-icon:not(.dice-icon-centered):hover {
+    transform: scale(1.2);
+    color: var(--ui-hover-color);
+    filter: drop-shadow(0 6px 12px var(--shadow-3));
+    text-shadow: 0 2px 6px var(--glow-2);
+}
+
+.dice-icon:not(.dice-icon-centered):active {
+    transform: scale(0.95);
+    filter: drop-shadow(0 1px 2px var(--shadow-2));
+    text-shadow: 0 1px 2px var(--glow-1);
+}
+
+/* 骰子禁用状态 */
+.dice-icon.disabled {
+    pointer-events: none;
+    filter: drop-shadow(0 1px 2px var(--shadow-1));
+    text-shadow: 0 1px 2px var(--glow-1);
+    opacity: var(--disabled-opacity);
+}
+
+/* 掷骰闪烁：亮色下保持中性色，暗色下按掷骰者的玩家配色 */
+.dice-icon.dice-flashing {
+    color: var(--text-primary-soft);
+}
+
+:root[data-theme="dark"] .dice-icon.dice-flashing.player-1 {
+    color: var(--player-1-dice);
+}
+
+:root[data-theme="dark"] .dice-icon.dice-flashing.player-2 {
+    color: var(--player-2-dice);
+}
+
+:root[data-theme="dark"] .dice-icon.dice-flashing.player-3 {
+    color: var(--player-3-dice);
+}
+
+:root[data-theme="dark"] .dice-icon.dice-flashing.player-4 {
+    color: var(--player-4-dice);
+}
+
+.dice-icon.disabled:hover {
+    cursor: not-allowed;
+    filter: drop-shadow(0 1px 2px var(--shadow-1));
+    text-shadow: 0 1px 2px var(--glow-1);
+}
+
+/* 遥控骰子特效（颜色见下方「覆盖玩家配色」）*/
+.dice-icon.remote-dice {
+    scale: 1.05;
+}
+
+/* 骰子已投掷状态 - 玩家颜色 */
+.dice-icon.rolled.player-1 {
+    color: var(--player-1-dice);
+    text-shadow: 0 2px 2px var(--glow-2);
+}
+
+.dice-icon.rolled.player-2 {
+    color: var(--player-2-dice);
+    text-shadow: 0 2px 2px var(--glow-2);
+}
+
+.dice-icon.rolled.player-3 {
+    color: var(--player-3-dice);
+    text-shadow: 0 2px 2px var(--glow-2);
+}
+
+.dice-icon.rolled.player-4 {
+    color: var(--player-4-dice);
+    text-shadow: 0 2px 2px var(--glow-2);
+}
+
+.dice-icon.rolled.remote-dice,
+.dice-icon.not-rolled.remote-dice {
+    color: #5bd0d6;
+    text-shadow: 0 2px 2px rgba(86, 86, 86, 0.5);
+}
+
+.dice-icon.not-rolled.dice-penalty-warning,
+.dice-icon.rolled.dice-penalty-warning,
+.dice-icon.not-rolled.dice-third-penalty,
+.dice-icon.rolled.dice-third-penalty,
+.dice-icon.dice-flashing.dice-penalty-warning,
+.dice-icon.dice-flashing.dice-third-penalty {
+    color: rgba(242, 47, 47, 0.95);
+    opacity: 1;
+    filter: none;
+}
+
+/* 待投掷：摇晃提示 */
+.dice-icon.not-rolled.dice-penalty-warning,
+.dice-icon.rolled.dice-penalty-warning {
+    animation: dicePenaltyTremble 0.9s ease-in-out infinite;
+}
+
+/* 投掷中：闪烁优先，红色保留 */
+.dice-icon.dice-flashing.dice-penalty-warning,
+.dice-icon.dice-flashing.dice-third-penalty {
+    animation: diceFlash 0.15s ease-in-out infinite;
+}
+
+/* 多面骰子显示样式 */
+.polyhedral-dice-display {
+    position: relative;
+    z-index: 3;
+    margin: 20px auto;
+    height: 90px;
+    width: 120px;
+    overflow: hidden;
+    font-size: 40px;
+    font-weight: bold;
+    color: var(--ui-default-color);
+    background: transparent;
+    text-shadow: 0 2px 3px var(--shadow-2);
+    pointer-events: none;
+}
+
+.polyhedral-dice-display .reel-viewport {
+    position: absolute;
+    left: 35px;
+    top: 20px;
+    width: 50px;
+    height: 50px;
+    overflow: hidden;
+}
+
+.polyhedral-dice-display .reel-strip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    transition: transform 1s cubic-bezier(0.1, 0.7, 0.2, 1);
+    will-change: transform;
+}
+
+.polyhedral-dice-display .reel-strip span {
+    display: block;
+    height: 44px;
+    line-height: 44px;
+    text-align: center;
+    font-size: 40px;
+    width: 100%;
+}
+
+.polyhedral-dice-display .final-number {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+}
+
+.polyhedral-dice-display::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    border: 4px solid currentColor;
+    box-shadow: 0 2px 4px var(--shadow-2);
+    z-index: -1;
+}
+
+/* 多面骰子玩家颜色：与骰面同色同透明度（骰面被 disabled 压到 0.6，数字牌也照着来，两边看着才是一个色） */
+.polyhedral-dice-display.player-1-color {
+    color: var(--player-1-dice);
+    border-color: var(--player-1-dice);
+    opacity: var(--disabled-opacity);
+}
+
+.polyhedral-dice-display.player-2-color {
+    color: var(--player-2-dice);
+    border-color: var(--player-2-dice);
+    opacity: var(--disabled-opacity);
+}
+
+.polyhedral-dice-display.player-3-color {
+    color: var(--player-3-dice);
+    border-color: var(--player-3-dice);
+    opacity: var(--disabled-opacity);
+}
+
+.polyhedral-dice-display.player-4-color {
+    color: var(--player-4-dice);
+    border-color: var(--player-4-dice);
+    opacity: var(--disabled-opacity);
+}
+
+/* 传送门图标样式 */
+#teleportIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 3;
+    margin: 20px 0;
+    height: 90px;
+    width: 120px;
+    box-sizing: border-box;
+    color: var(--ui-default-color);
+}
+
+#teleportIcon svg {
+    width: 60px;
+    height: 60px;
+}
+
+/* 传送门玩家颜色 */
+#teleportIcon.player-1-border {
+    color: var(--player-1-border);
+}
+
+#teleportIcon.player-2-border {
+    color: var(--player-2-border);
+}
+
+#teleportIcon.player-3-border {
+    color: var(--player-3-border);
+}
+
+#teleportIcon.player-4-border {
+    color: var(--player-4-border);
+}
+
+/* 骰子闪烁动画 */
+.dice-flashing {
+    animation: diceFlash 0.15s ease-in-out infinite;
+}
+
+.pulse-animation {
+    animation: pulse 1s infinite;
+}
+
+.mysteryBox-glow-animation {
+    animation: mysteryBoxGlow 0.5s ease-in-out 2;
+}
+
+/* 加载提示样式 */
+.loading-indicator,
+.pause-indicator,
+.chat-input-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--ui-default-color);
+    font-size: 18px;
+    margin: 20px 0;
+    height: 90px;
+    min-height: 90px;
+    width: 100%;
+}
+
+.loading-indicator,
+.pause-indicator {
+    display: none;
+}
+
+.chat-input-area {
+    display: none;
+    width: 100%;
+}
+
+.loading-text,
+.pause-text {
+    margin-bottom: 15px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px var(--glow-2);
+    min-width: 200px;
+    text-align: center;
+}
+
+/* 聊天输入区域样式 */
+.chat-input-container {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    gap: 2px;
+    background: transparent;
+    position: relative;
+    width: 100%;
+    max-width: 220px;
+}
+
+.chat-input {
+    flex: 1;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 20px;
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    min-width: 0;
+}
+
+.chat-input:focus {
+    box-shadow: 0 0 2px var(--white),
+        inset 0 0 2px var(--white);
+}
+
+.chat-input::placeholder {
+    color: #a9a7a7;
+}
+
+.chat-send-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--ui-default-color);
+}
+
+.chat-send-btn svg {
+    width: 100%;
+    height: 100%;
+}
+
+.chat-send-btn:hover {
+    scale: 1.1;
+    color: var(--ui-default-color);
+}
+
+/* Emoji按钮样式 */
+.emoji-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: var(--radius-full);
+    margin-right: 5px;
+    color: var(--ui-default-color);
+}
+
+.emoji-btn:hover {
+    transform: scale(1.1);
+    color: var(--ui-default-color);
+    background: rgba(var(--ui-default-color-rgb), 0.1);
+}
+
+.emoji-btn svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Emoji选择面板样式 */
+.emoji-panel {
+    position: absolute;
+    bottom: 50px;
+    left: 0;
+    width: 280px;
+    max-height: 200px;
+    color: var(--text-primary);
+    background: var(--warm-white);
+    border: 1.5px solid var(--border-light);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow-1);
+    display: none;
+    z-index: 1000;
+}
+
+.emoji-panel.show {
+    display: block;
+    animation: PanelSlideIn 0.2s ease-out;
+}
+
+.emoji-panel-content {
+    padding: 10px;
+    display: grid;
+    /* 列宽可收缩：纵向滚动条一出现，固定列就会顶出一根粗横条 */
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    max-height: 180px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* 自定义滚动条 */
+.emoji-panel-content::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.emoji-panel-content::-webkit-scrollbar-track {
+    background: var(--shadow-1);
+    border-radius: 3px;
+}
+
+.emoji-panel-content::-webkit-scrollbar-thumb {
+    background: var(--border-soft);
+    border-radius: 3px;
+}
+
+.emoji-panel-content::-webkit-scrollbar-thumb:hover {
+    background: var(--border-soft);
+}
+
+/* Emoji项样式 */
+.emoji-item {
+    width: auto;
+    min-width: 0;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 24px;
+    user-select: none;
+    background: transparent;
+}
+
+.emoji-item:hover {
+    background: var(--overlay-warm);
+    transform: scale(1.15);
+}
+
+.emoji-item:active {
+    transform: scale(0.95);
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border: 4px solid var(--border-soft);
+    border-top: 4px solid var(--ui-default-color);
+    border-radius: var(--radius-full);
+    animation: spin 1s linear infinite;
+    flex-shrink: 0;
+}
+
+/* 房间号加载动画 */
+.loading-dots {
+    display: inline-block;
+}
+
+.loading-dots .dot {
+    display: inline-block;
+    animation: waveDots 1.4s infinite ease-in-out;
+    font-weight: bold;
+    text-shadow: none;
+}
+
+.loading-dots .dot1 {
+    animation-delay: 0s;
+}
+
+.loading-dots .dot2 {
+    animation-delay: 0.2s;
+}
+
+.loading-dots .dot3 {
+    animation-delay: 0.4s;
+}
+
+/* 骰子震动动画 - 表示无效点数 */
+.dice-shake {
+    animation: diceShake 0.5s ease-in-out;
+}
+
+/* 思考时间进度条容器 */
+.thinking-progress-container {
+    width: 200px;
+    height: 8px;
+    background: transparent;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    border: 2px solid var(--current-player-color);
+    /* 可见性只由 .active 决定，避免回合切换动画期间提前露出下一家的颜色 */
+    display: none;
+    box-shadow: none;
+    transform: translateY(-10px);
+}
+
+.thinking-progress-container.active {
+    display: block;
+}
+
+/* 思考时间进度条 */
+.thinking-progress-bar {
+    height: 110%;
+    width: 100%;
+    background: var(--current-player-color);
+    transition: width 0.1s linear;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 玩家颜色变量 */
+.thinking-progress-container.player-1 {
+    --current-player-color: var(--player-1-color);
+}
+
+.thinking-progress-container.player-2 {
+    --current-player-color: var(--player-2-color);
+}
+
+.thinking-progress-container.player-3 {
+    --current-player-color: var(--player-3-color);
+}
+
+.thinking-progress-container.player-4 {
+    --current-player-color: var(--player-4-color);
+}

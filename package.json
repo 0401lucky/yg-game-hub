@@ -2,19 +2,36 @@
   "name": "yg-game-hub",
   "version": "1.0.0",
   "description": "多人联机小游戏合集：门户 + 各游戏 + 共享账号体系",
+  "type": "module",
+  "engines": { "node": ">=24.0.0" },
   "scripts": {
-    "dev:backend": "cd backend && npm run dev",
-    "start:backend": "cd backend && npm start",
-    "start": "npm run start:backend",
-    "install:all": "npm install && cd backend && npm install",
-    "test:auth": "node backend/test-auth.mjs",
-    "test:flight-room": "node backend/test-flight-room.mjs",
-    "test:doudizhu": "node --test backend/test-doudizhu.mjs backend/test-doudizhu-room.mjs backend/test-doudizhu-account.mjs"
+    "dev": "concurrently -k \"npm run dev:backend\" \"vite --configLoader native\"",
+    "dev:backend": "node tools/dev-backend.ts",
+    "start:backend": "node backend/server.ts",
+    "start": "node backend/server.ts",
+    "build": "vite build --configLoader native",
+    "preview": "vite preview --configLoader native",
+    "typecheck": "tsc --noEmit -p tsconfig.shared.json && tsc --noEmit -p tsconfig.backend.json && tsc --noEmit -p tsconfig.frontend.json && tsc --noEmit -p tsconfig.tools.json",
+    "install:all": "npm install",
+    "test": "node --test tests/node/*.test.ts",
+    "test:auth": "node --test tests/node/http.test.ts tests/node/account-stats.test.ts",
+    "test:flight-room": "node --test tests/node/flight-rooms.test.ts",
+    "test:doudizhu": "node --test tests/node/doudizhu-*.test.ts tests/node/account-stats.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
-  },
-  "workspaces": [
-    "backend"
-  ]
+    "@playwright/test": "^1.58.2",
+    "@types/express": "^4.17.25",
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.18.1",
+    "concurrently": "^8.2.2",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.5"
+  }
 }

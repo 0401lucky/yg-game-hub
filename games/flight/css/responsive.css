@@ -1,0 +1,1000 @@
+/* 平板和手机端通用样式 */
+@media (max-width: 1260px) {
+    body {
+        padding: 0;
+        align-items: flex-start;
+    }
+
+    .mode-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        margin: 20px 0;
+    }
+
+    .main-layout {
+        flex-direction: column;
+        align-items: center;
+        padding: 10px;
+        gap: 15px;
+        width: 100%;
+    }
+
+    .game-container {
+        width: 100%;
+        max-width: 100%;
+        order: 1;
+    }
+
+    .game-notification {
+        text-align: center;
+    }
+
+    .control-panel {
+        width: 100%;
+        max-width: none;
+        order: 2;
+        min-height: auto;
+    }
+
+    .main-layout .control-panel {
+        height: auto;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 20px 0;
+    }
+
+    .control-panel-inner {
+        max-width: none;
+        width: 100%;
+    }
+
+    .game-control-content {
+        background: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        box-shadow: none;
+        padding: 10px 0;
+    }
+
+    .players-info {
+        width: 100%;
+        height: 100%;
+    }
+    .polyhedral-dice-display{
+        font-size: 34px;
+    }
+    .polyhedral-dice-display .reel-strip span,
+    .polyhedral-dice-display .final-number {
+        font-size: 34px;
+    }
+    .polyhedral-dice-display .reel-strip span {
+        height: 40px;
+        line-height: 40px;
+    }
+    .polyhedral-dice-display::before {
+        width: 45px;
+        height: 45px;
+    }
+    .polyhedral-dice-display .reel-viewport {
+        width: 45px;
+        height: 45px;
+        left: 37px;
+        top: 22px;
+    }
+    #board-svg {
+        width: min(500px, 90vw);
+        height: min(500px, 90vw);
+    }
+
+    .player-info.pos-tr {
+        top: 8%;
+        right: 8%;
+    }
+
+    .player-info.pos-br {
+        bottom: 8%;
+        right: 8%;
+    }
+
+    .player-info.pos-bl {
+        bottom: 8%;
+        left: 8%;
+    }
+
+    .player-info.pos-tl {
+        top: 8%;
+        left: 8%;
+    }
+
+    /* 调整控制面板内容 */
+    .control-content {
+        gap: 10px;
+    }
+
+    .game-info-panel {
+        max-height: 250px;
+        max-width: none;
+    }
+
+    .progress-panel {
+        max-height: 250px;
+    }
+
+    /* 调整房间号显示 */
+    .game-room-code-display {
+        font-size: 20px;
+    }
+
+    .emoji-panel {
+        width: 260px;
+        bottom: 50px;
+    }
+
+    .index-content {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .tip-content {
+        font-size: 0.7rem;
+        line-height: 16px;
+    }
+
+    .tip-content.slide-up-out {
+        transform: translateY(-16px);
+    }
+
+    .tip-content.slide-up-in {
+        transform: translateY(16px);
+    }
+
+    .tip-content.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    .color-options {
+        grid-template-columns: repeat(auto-fit, minmax(60px, auto));
+        gap: 10px;
+        width: 100%;
+        max-width: none;
+    }
+
+    .bot-players {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .player-setup-row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* 聊天消息显示在顶部 */
+    .chat-message-content {
+        bottom: auto;
+        top: 5px;
+        left: 20px;
+    }
+
+    .skill-icon,
+    .lightning-icon,
+    .chat-icon {
+        width: 32px;
+        height: 32px;
+        padding: 3px;
+    }
+}
+
+/* 中屏优化：三个板块水平排列、等高，内部内容均匀分布 */
+@media (min-width: 695px) and (max-width: 1260px) {
+    .game-control-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+        align-items: stretch;
+        width: 100%;
+    }
+    /* 第2列（完成进度）：内部进度条均匀分布 */
+    .game-control-content > .game-panel-section:nth-child(2) {
+        display: flex;
+        flex-direction: column;
+    }
+    .game-control-content > .game-panel-section:nth-child(2) .progress-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .game-control-content > .game-panel-section:nth-child(2) .panel-body-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .game-control-content > .game-panel-section:nth-child(2) .progress-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+    }
+    /* 第3列（操作按钮）：内部按钮均匀分布 */
+    .game-control-content > .game-panel-section:nth-child(3) {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+    }
+    .game-control-content > .game-panel-section:nth-child(3) .game-room-code-display-column {
+        display: block;
+        margin: 0 10% 6px 10%;
+        padding: 8px 12px;
+        font-size: 16px;
+    }
+    .control-title .game-room-code-display {
+        display: none !important;
+    }
+}
+
+/* 小型平板优化 (480px - 1000px) - 防止user-info和棋盘重叠 */
+@media (max-width: 1000px) and (min-width: 520px) {
+
+    #board-svg {
+        width: min(380px, 75vw);
+        height: min(380px, 75vw);
+    }
+
+    .players-info {
+        width: 110%;
+        height: 75%;
+    }
+
+    /* 调整玩家头像位置，更靠近边缘 */
+    .player-info.pos-tr {
+        top: 5%;
+        right: 5%;
+    }
+
+    .player-info.pos-br {
+        bottom: 5%;
+        right: 5%;
+    }
+
+    .player-info.pos-bl {
+        bottom: 5%;
+        left: 5%;
+    }
+
+    .player-info.pos-tl {
+        top: 5%;
+        left: 5%;
+    }
+
+    /* 减小玩家头像大小 */
+    .player-avatar {
+        width: 42px;
+        height: 42px;
+        border-width: 2.5px;
+    }
+
+    .player-emoji {
+        width: 42px;
+        height: 42px;
+    }
+
+    .player-name {
+        max-width: 80px;
+        font-size: 12px;
+    }
+
+    /* 调整棋盘大小 */
+    .energy-bar-container {
+        height: 50px;
+        border-radius: 10px;
+    }
+
+    .energy-value {
+        font-size: 9px;
+    }
+
+    /* 减小击败次数显示 */
+    .defeat-count {
+        width: 25px;
+        height: 18px;
+        font-size: 18px;
+    }
+
+    /* 调整控制面板字体大小 */
+    .control-title h3 {
+        font-size: 20px;
+    }
+
+    .control-section h3,
+    .game-panel-section h3 {
+        font-size: 16px;
+    }
+
+    /* 调整游戏控制区域 */
+    .dice-icon {
+        font-size: 60px;
+        height: 80px;
+        width: 100px;
+        line-height: 1;
+        padding: 0;
+    }
+
+    .energy-gain-text {
+        height: 80px;
+        width: 100px;
+    }
+
+    .thinking-progress-container {
+        width: 160px;
+    }
+
+    .polyhedral-dice-display {
+        height: 80px;
+        width: 100px;
+        font-size: 30px;
+        margin: 18px 0;
+    }
+
+    .polyhedral-dice-display .reel-strip span,
+    .polyhedral-dice-display .final-number {
+        font-size: 30px;
+    }
+
+    .polyhedral-dice-display .reel-strip span {
+        height: 37px;
+        line-height: 37px;
+    }
+
+    .polyhedral-dice-display::before {
+        width: 42px;
+        height: 42px;
+    }
+
+    .polyhedral-dice-display .reel-viewport {
+        width: 42px;
+        height: 42px;
+        left: 29px;
+        top: 19px;
+    }
+
+    /* 调整传送门和盲盒图标 */
+    #teleportIcon,
+    #mysteryBoxIcon {
+        height: 80px;
+        width: 100px;
+        margin: 18px 0;
+    }
+
+    #teleportIcon svg,
+    #mysteryBoxIcon svg {
+        width: 48px;
+        height: 48px;
+    }
+
+    .loading-indicator,
+    .pause-indicator,
+    .chat-input-area {
+        height: 80px;
+        min-height: 80px;
+        margin: 18px 0;
+    }
+
+    /* 聊天消息显示在顶部 */
+    .chat-message-content {
+        bottom: auto;
+        top: 5px;
+        left: 20px;
+    }
+
+    .skill-icon,
+    .lightning-icon,
+    .chat-icon {
+        width: 32px;
+        height: 32px;
+        padding: 3px;
+    }
+}
+
+/* 手机端媒体查询 */
+@media (max-width: 695px) {
+    body {
+        margin: 0
+    }
+
+    /* 手机端聊天消息圆角更小 */
+    .chat-message-content {
+        border-radius: 5px;
+    }
+
+    .rules-modal-content {
+        max-width: 70%;
+    }
+
+    .room-chat-drawer {
+        height: min(320px, calc(100% - 16px));
+        width: 0;
+        max-width: 94%;
+    }
+
+    .room-chat-drawer.is-open {
+        width: min(250px, calc(100% - 6px - var(--control-content-padding-right, 10px)));
+    }
+
+    .room-chat-emoji-panel {
+        left: 0;
+        right: 0;
+        width: auto;
+        max-width: 100%;
+        bottom: 36px;
+    }
+
+    .room-chat-emoji-panel-content {
+        padding: 5px;
+        gap: 3px;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+
+    .room-chat-emoji-item {
+        width: auto;
+        min-width: 0;
+        height: 23px;
+        font-size: 16px;
+        border-radius: 4px;
+    }
+
+    .username-input-group {
+        width: 85%;
+        max-width: none;
+    }
+
+    .username-input-with-icon {
+        width: 100%;
+    }
+
+    /* 主布局在移动端改为垂直布局 */
+    .main-layout {
+        flex-direction: column;
+        padding: 0;
+        gap: 0;
+        width: 100%;
+    }
+
+    .control-panel-inner {
+        order: 2;
+        border-radius: 12px;
+        padding: 15px;
+        box-sizing: border-box;
+        min-height: 100px;
+        margin: 0 15px 15px 15px;
+        width: calc(100% - 50px);
+        align-self: center;
+    }
+
+    .game-info-panel {
+        height: 320px;
+        width: auto;
+        min-width: auto;
+        max-width: none;
+        margin-bottom: 15px;
+    }
+
+    .progress-panel {
+        height: auto;
+        min-height: auto;
+        max-height: 200px;
+        margin-bottom: 0;
+    }
+
+    .game-container {
+        flex-direction: column;
+        width: 100%;
+        min-width: auto;
+        padding: 10px 0;
+        box-sizing: border-box;
+        order: 1;
+    }
+
+    /* 隐藏桌面端玩家信息 */
+    .players-info {
+        display: none;
+    }
+
+    /* 显示移动端玩家信息 */
+    .players-top,
+    .players-bottom {
+        display: flex;
+        justify-content: space-between;
+        padding: 0px 20px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .players-top {
+        order: 1;
+    }
+
+    .players-bottom {
+        order: 3;
+    }
+
+    /* 移动端棋盘样式*/
+    #board-svg {
+        width: 100% !important;
+        height: auto !important;
+        max-width: 100vw;
+        aspect-ratio: 1;
+        min-width: 280px;
+    }
+
+    .board-container {
+        width: 100%;
+        order: 2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .player-info {
+        position: static;
+        flex-direction: row;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* 移动端击败次数样式 */
+    .defeat-counts-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    /* 移动端积分条样式 */
+    .energy-bar-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .energy-value {
+        font-size: 9px;
+    }
+
+    .player-info.mobile-right .energy-bar-wrapper {
+        order: 3;
+    }
+
+    .player-info.mobile-left .energy-bar-wrapper {
+        order: 1;
+    }
+
+    .player-info.mobile-left .player-main {
+        order: 2;
+    }
+
+    .player-info.mobile-left .defeat-counts {
+        order: 3;
+    }
+
+    .player-info.mobile-right .defeat-counts {
+        order: 1;
+    }
+
+    .player-info.mobile-right .player-main {
+        order: 2;
+    }
+
+    .player-main {
+        order: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .player-avatar {
+        width: 40px;
+        height: 40px;
+    }
+
+    .player-name {
+        max-width: 80px;
+        font-size: 12px;
+    }
+
+    /* 移动端游戏控制区域 */
+    .game-controls {
+        order: 4;
+        margin-top: 10px;
+    }
+
+    .dice-icon {
+        font-size: 60px;
+        height: 75px;
+        width: 100px;
+        line-height: 1;
+        margin: 15px 0;
+        padding: 0;
+    }
+
+    .dice-icon:hover {
+        transform: scale(1);
+    }
+
+    /* 移动端多面骰子 */
+    .polyhedral-dice-display {
+        height: 75px;
+        width: 100px;
+        font-size: 28px;
+        margin: 15px 0;
+    }
+
+    .polyhedral-dice-display .reel-strip span,
+    .polyhedral-dice-display .final-number {
+        font-size: 28px;
+    }
+
+    .polyhedral-dice-display .reel-strip span {
+        height: 30px;
+        line-height: 30px;
+    }
+
+    .polyhedral-dice-display::before {
+        width: 35px;
+        height: 35px;
+    }
+
+    .polyhedral-dice-display .reel-viewport {
+        width: 35px;
+        height: 35px;
+        left: 33px;
+        top: 20px;
+    }
+
+    /* 移动端传送门和盲盒图标 */
+    #teleportIcon,
+    #mysteryBoxIcon {
+        height: 75px;
+        width: 100px;
+        margin: 15px 0;
+    }
+
+    /* 与 .dice-icon 同尺寸同外边距：两者在同一位置轮换，盒子不一致会让进度条上下跳 */
+    .energy-gain-text {
+        height: 75px;
+        width: 100px;
+        margin: 15px 0;
+        border-radius: 10px;
+        gap: 2px;
+    }
+
+    .loading-indicator,
+    .pause-indicator,
+    .chat-input-area {
+        height: 75px;
+        min-height: 75px;
+        margin: 15px 0;
+    }
+
+    .dice-selector {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
+    }
+
+    .dice-btn {
+        padding: 5px;
+        font-size: 22px;
+    }
+
+    .debug-move-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+
+    .index-content {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .tip-content.slide-up-out {
+        transform: translateY(-16px);
+    }
+
+    .tip-content.slide-up-in {
+        transform: translateY(16px);
+    }
+
+    .color-options {
+        grid-template-columns: repeat(auto-fit, minmax(60px, auto));
+        gap: 10px;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .bot-players {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .modal-content {
+        width: 90%;
+        margin: 10px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-header {
+        padding: 12px 15px;
+        flex-shrink: 0;
+    }
+
+    .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 15px;
+        min-height: 0;
+    }
+
+    .modal-footer {
+        padding: 10px 15px;
+        flex-shrink: 0;
+    }
+
+    .modal-header h2 {
+        font-size: 18px;
+        white-space: nowrap;
+    }
+
+    .settlement-rankings {
+        gap: 10px;
+    }
+
+    .settlement-rankings .flip-card-front {
+        padding: 6px;
+    }
+
+    .ranking-item {
+        padding: 6px 8px;
+        min-height: 35px;
+    }
+
+    .ranking-name {
+        font-size: 14px;
+    }
+
+    .ranking-progress {
+        font-size: 12px;
+    }
+
+    .ranking-position {
+        font-size: 10px;
+        min-width: 20px;
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        margin-right: 10px;
+    }
+
+    .ranking-info {
+        flex: 1;
+        margin-left: 0;
+        min-width: 0;
+    }
+
+    .ranking-defeats {
+        gap: 0px;
+        flex-shrink: 0;
+    }
+
+    .ranking-defeats .defeat-count {
+        font-size: 20px;
+        min-width: 20px;
+    }
+
+    .ranking-avatar {
+        width: 30px;
+        height: 30px;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+
+    .btn-primary {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+
+    .player-setup-row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .chat-icon,
+    .skill-icon,
+    .lightning-icon {
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .chat-message-content {
+        padding: 10px;
+        font-size: 12px;
+        font-weight: 500;
+        text-align: center;
+        width: 400px;
+        min-height: 20px;
+        max-height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: left;
+        left: 22%;
+        word-wrap: nowrap;
+        line-height: 1.4;
+        overflow: hidden;
+        animation: chatMessageFadeIn 0.3s ease-out;
+        top: 20px;
+        box-sizing: border-box;
+    }
+
+    /* 移动端emoji面板适配 */
+    .emoji-panel {
+        width: 250px;
+        bottom: 45px;
+    }
+
+    .emoji-panel-content {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 6px;
+        max-height: 150px;
+    }
+
+    .emoji-item {
+        height: 32px;
+        font-size: 20px;
+    }
+
+    .emoji-btn {
+        width: 24px;
+        height: 24px;
+        margin-right: 3px;
+    }
+
+    .chat-send-btn {
+        width: 24px;
+        height: 24px;
+    }
+
+    /* 移动端道具面板样式 */
+    .skill-panel {
+        width: 340px;
+        bottom: 45px;
+        right: 20px;
+        left: auto;
+    }
+
+
+    .skill-panel-header {
+        padding: 8px 10px;
+        gap: 4px;
+    }
+
+    .skill-panel-header h4 {
+        font-size: 13px;
+    }
+
+    .skill-energy-hint {
+        font-size: 9px;
+    }
+
+    .skill-energy-display {
+        font-size: 11px;
+    }
+
+    .skill-panel-content {
+        padding: 8px;
+        gap: 8px;
+        max-height: 300px;
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .skill-item {
+        padding: 8px;
+        gap: 8px;
+    }
+
+    .skill-icon-container {
+        width: 36px;
+        height: 36px;
+    }
+
+    .skill-icon-container svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    .skill-name {
+        font-size: 13px;
+    }
+
+    .skill-desc {
+        font-size: 10px;
+    }
+
+    .skill-cost {
+        font-size: 9px;
+    }
+
+    /* 移动端骰子选择面板 */
+    .dice-selection-panel {
+        width: 200px;
+        bottom: 45px;
+    }
+
+    .dice-selection-panel h3 {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+
+    .dice-selection-container {
+        gap: 5px;
+        padding: 8px;
+    }
+
+    .dice-selection-btn {
+        height: 45px;
+        font-size: 36px;
+    }
+
+    /* 移动端游戏通知弹窗适配 */
+    .game-notification {
+        font-size: 14px;
+        padding: 6px 10px;
+        width: max-content;
+        text-align: center;
+    }
+
+    /* 移动端积分粒子适配 */
+    .energy-particle {
+        width: 4px;
+        height: 4px;
+    }
+
+    /* 移动端隐藏棋子数这一列 */
+    .public-room-list-head,
+    .public-room-item {
+        grid-template-columns: 1.6fr 1fr 0.8fr 1.1fr;
+    }
+
+    .public-room-list-head .head-col:nth-child(3),
+    .public-room-piece-count {
+        display: none;
+    }
+
+    .public-room-list-head .head-col:last-child,
+    .public-room-status {
+        text-align: right;
+    }
+}
+
+@media(max-width: 380px) {
+    .skill-panel {
+        width: calc(100% - 20px);
+        right: 10px;
+        left: 10px;
+        max-width: 340px;
+    }
+}

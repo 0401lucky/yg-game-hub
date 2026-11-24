@@ -33,3 +33,6 @@ games/flight/assets/违规词库.txt
 /tools/title-stats.mjs
 # 运行时数据
 /backend/data/
+/playwright-report/
+/test-results/
+/runtime-games/

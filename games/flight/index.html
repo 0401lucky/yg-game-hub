@@ -9,11 +9,9 @@
     <meta http-equiv="Expires" content="0">
     <title>飞行棋</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <script>try{document.documentElement.dataset.theme=localStorage.getItem("flyingChess.theme")==="dark"?"dark":"light";}catch(e){}</script>
-
-    <link rel="stylesheet" href="css/theme.css">
+    <script data-theme-bootstrap></script>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="/css/account.css">
+    <link rel="stylesheet" href="/web/css/account.css">
 </head>
 
 <body>
@@ -951,17 +949,10 @@
         </div>
     </div>
 
-    <script type="module" src="./js/indexMain.js"></script>
-    <script>
-        function showModeRulesModal() {
-            document.getElementById('modeRulesModal').style.display = 'flex';
-        }
-        function hideModeRulesModal() {
-            document.getElementById('modeRulesModal').style.display = 'none';
-        }
-    </script>
+    <script type="module" src="./js/modeRules.ts"></script>
+    <script type="module" src="./js/indexMain.ts"></script>
 
-    <script src="/js/account.js" defer></script>
+    <script type="module" src="/web/js/account.ts"></script>
 
 </body>
 </html>

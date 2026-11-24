@@ -1,0 +1,131 @@
+/* 主题切换按钮：扁平圆钮，月亮/太阳两个 SVG 靠缩放旋转互换 */
+.theme-toggle {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    z-index: 9999;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-full);
+    color: var(--text-primary);
+    opacity: 0.7;
+    transition: border-color 0.25s ease, color 0.25s ease, opacity 0.25s ease;
+}
+
+.theme-toggle:hover {
+    opacity: 1;
+    border-color: var(--text-primary);
+}
+
+.theme-icon {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    transition: transform 0.35s cubic-bezier(0.4, 0.1, 0.2, 1), opacity 0.35s ease;
+}
+
+.theme-icon-moon {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+}
+
+.theme-icon-sun {
+    transform: scale(0) rotate(90deg);
+    opacity: 0;
+}
+
+.theme-toggle.is-dark .theme-icon-moon {
+    transform: scale(0) rotate(-90deg);
+    opacity: 0;
+}
+
+.theme-toggle.is-dark .theme-icon-sun {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+}
+
+/* 游戏页：按钮落进信息面板头部，排在聊天切换按钮左边 */
+.theme-toggle-inline {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 24px;
+    height: 24px;
+    margin-right: 6px;
+    border: 1.5px solid var(--border-light);
+}
+
+.theme-toggle-inline .theme-icon {
+    width: 15px;
+    height: 15px;
+}
+
+/* 首页：跟页脚版本号同一号字、同一颜色，无边框 */
+.theme-toggle-footer {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    display: inline-flex;
+    font-size: inherit;
+    width: 1em;
+    height: 1em;
+    padding: 0;
+    margin-left: 0.35em;
+    vertical-align: -0.1em;
+    border: none;
+    background: none;
+    color: inherit;
+    opacity: 1;
+}
+
+.theme-toggle-footer:hover .theme-icon {
+    fill:#75cafb;
+    stroke:#75cafb;
+}
+.theme-toggle-footer .theme-icon {
+    width: 1em;
+    height: 1em;
+}
+
+.info-header h3 {
+    margin-right: auto;
+}
+
+/* 席位点击反馈：左右摇摆一下（用独立 rotate 属性，不和 hover 的 transform 抢） */
+@keyframes seatSway {
+    0%, 100% { rotate: 0deg; }
+    20% { rotate: -8deg; }
+    45% { rotate: 7deg; }
+    70% { rotate: -4deg; }
+    85% { rotate: 2deg; }
+}
+
+.seat-sway {
+    animation: seatSway 0.6s ease-in-out;
+}
+
+/* 主题切换：从按钮位置开始的圆形扩散（View Transitions API） */
+@keyframes theme-reveal {
+    from { clip-path: circle(0% at var(--theme-transition-x, 100%) var(--theme-transition-y, 0%)); }
+    to { clip-path: circle(150% at var(--theme-transition-x, 100%) var(--theme-transition-y, 0%)); }
+}
+
+::view-transition-old(root) {
+    animation: none;
+    opacity: 1;
+}
+
+::view-transition-new(root) {
+    animation: theme-reveal 0.35s ease-out both;
+}
+
+::view-transition-image-pair(root) {
+    isolation: isolate;
+}

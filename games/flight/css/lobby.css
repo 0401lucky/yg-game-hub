@@ -1,0 +1,448 @@
+/* 通用配置面板样式 */
+.config-panel {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    width: 90%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.player-config-panel,
+.online-multiplayer-config,
+.local-multiplayer-config,
+.ai-battle-config,
+.room-selection,
+.room-config {
+    display: none;
+    flex-direction: column;
+    flex: 1 0 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.control-section {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-shrink: 0;
+    /* 禁止收缩 */
+}
+
+.player-config-panel {
+    transform: translateZ(0);
+    will-change: transform, opacity;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.online-multiplayer-config,
+.local-multiplayer-config,
+.ai-battle-config,
+.online-multiplayer-config {
+    position: relative;
+}
+
+.room-selection,
+.room-config {
+    width: 100%;
+    gap: 16px;
+    margin: 0 auto;
+}
+
+.public-room-actions-bar {
+    width: 100%;
+    margin-top: auto;
+}
+
+/* 首页主菜单样式 */
+.main-menu-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    width: 400px;
+    max-width: 95%;
+    margin: 20px auto;
+}
+
+.menu-card-btn {
+    width: 100%;
+    height: 60px;
+    background: var(--ui-default-color);
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 2px 2px var(--shadow-3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 24px;
+}
+
+#menuOnlineBtn {
+    background-color: var(--player-3-color);
+}
+
+#menuAiBtn {
+    background-color: var(--player-4-color);
+}
+
+#menuLocalBtn {
+    background-color: var(--player-1-color);
+}
+
+#menuStatsBtn {
+    background-color: var(--player-2-color);
+}
+
+.menu-card-btn:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+    box-shadow: 0 6px 6px var(--shadow-3);
+}
+
+.menu-card-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px var(--shadow-1);
+}
+
+.menu-btn-text {
+    color: var(--white);
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-shadow: 1px 1px 2px var(--shadow-3);
+}
+
+.menu-btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    color: var(--white);
+    filter: drop-shadow(1px 1px 2px var(--shadow-3));
+}
+
+.menu-btn-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.mode-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    margin: 20px 0;
+    width: 100%;
+}
+
+.mode-btn {
+    width: 100%;
+    padding: 16px 20px;
+    color: var(--text-primary);
+    border: 2px solid var(--border-light);
+    background: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 硬件加速 */
+    transform: translateZ(0);
+}
+
+.mode-btn:hover {
+    text-shadow: none;
+    box-shadow: 0 4px 12px var(--shadow-1);
+    transform: translateY(-2px) translateZ(0);
+}
+
+.mode-btn-content {
+    text-align: center;
+}
+
+.mode-btn-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.mode-btn-desc {
+    font-size: 12px;
+    opacity: 0.8;
+    font-weight: normal;
+}
+
+.public-room-list-panel {
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: clamp(260px, 45vh, 420px);
+}
+
+.public-room-list-header {
+    display: flex;
+    gap: 8px;
+}
+
+.public-room-search {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: var(--glow-1);
+    border: 1.5px solid var(--border-soft);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.public-room-search::placeholder {
+    color: var(--font-faint);
+}
+
+.public-room-search:focus {
+    box-shadow: none;
+    border-color: var(--border-soft);
+}
+
+.public-room-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.public-room-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.public-room-list::-webkit-scrollbar-track {
+    background: var(--shadow-1);
+    border-radius: 3px;
+}
+
+.public-room-list::-webkit-scrollbar-thumb {
+    background: rgba(252, 250, 255, 0.751);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+.public-room-list::-webkit-scrollbar-thumb:hover {
+    background: var(--border-light);
+    cursor: pointer;
+}
+
+.public-room-list-empty {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--font-faint);
+    font-size: 13px;
+    padding: 10px 0;
+}
+
+.public-room-item {
+    display: grid;
+    grid-template-columns: 1.6fr 0.7fr 0.7fr 0.7fr 0.9fr;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-medium);
+    background: var(--glow-1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.public-room-status {
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.status-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.status-badge.waiting {
+    color: var(--status-ok);
+    border: 1.5px solid var(--status-ok);
+}
+
+.status-badge.playing {
+    color: var(--status-wait);
+    border: 1.5px solid var(--status-wait);
+}
+
+.status-badge.finished {
+    color: var(--status-off);
+    border: 1px solid var(--status-off);
+}
+
+.public-room-item:hover {
+    background: var(--shadow-1);
+    border-color: var(--border-light);
+    box-shadow: 0 1px 3px var(--shadow-2);
+}
+
+.public-room-name {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.public-room-mode,
+.public-room-piece-count,
+.public-room-player-count {
+    color: var(--text-secondary);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.public-room-actions-bar {
+    position: sticky;
+    bottom: 0;
+    padding-top: 8px;
+}
+
+.mode-buttons.mode-buttons-bottom {
+    margin-top: 0;
+    flex-direction: row;
+    gap: 12px;
+}
+
+.mode-buttons.mode-buttons-bottom .mode-btn {
+    flex: 1;
+    min-height: 54px;
+    padding: 12px 14px;
+}
+
+.mode-buttons.mode-buttons-bottom .mode-btn-title {
+    font-size: 16px;
+    margin-bottom: 0;
+}
+
+/* 配置面板头部样式 */
+.config-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+    min-height: 44px;
+    padding: 0 44px;
+}
+
+.back-btn {
+    background: none;
+    border: 2px solid transparent;
+    color: var(--text-primary);
+    border-radius: var(--radius-full);
+    padding: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    box-sizing: border-box;
+}
+
+.back-btn:hover {
+    border: 2px solid var(--border-light);
+    box-shadow: none;
+}
+
+.back-btn svg {
+    width: 20px;
+    height: 20px;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover svg {
+    scale: 1.2;
+}
+
+/* 重试按钮样式 */
+.retry-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 10px 5px;
+    transition: all 0.3s ease;
+    box-shadow: none;
+    min-width: 100px;
+}
+
+.retry-btn:hover {
+    transform: translateY(-2px);
+}
+
+#configTitle {
+    margin: 0;
+    width: 100%;
+    text-align: center;
+}
+
+.room-title-input {
+    width: 100%;
+    max-width: none;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+
+    color: var(--text-primary);
+    background: transparent;
+    border: 1.5px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 6px 10px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.room-title-input:focus {
+    border-color: var(--border-medium);
+    background: var(--glow-1);
+}

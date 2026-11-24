@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["web/**/*.ts", "games/flight/js/**/*.ts", "games/flight/assets/**/*.ts", "games/doudizhu/app.ts", "games/minesweeper/app.ts"]
+}

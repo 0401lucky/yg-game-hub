@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fbf8f3">
+  <meta name="description" content="一格一格，探索小小世界。奶油色的林间扫雷，三档难度、首击保护与每日同图挑战，游客也能随时开玩。">
+  <title>扫雷 · 林间探险</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/web/css/account.css">
+  <link rel="preload" href="assets/forest-hero.webp" as="image">
+</head>
+<body class="mine-app">
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="扫雷 · 林间探险首页">
+      <img src="favicon.svg" alt="" width="42" height="42">
+      <span><strong>扫雷<span class="brand-dot">.</span><small>林间探险</small></strong><span class="brand-caption">A LITTLE FOREST ADVENTURE</span></span>
+    </a>
+    <nav class="header-nav" aria-label="游戏导航">
+      <a class="hub-link" href="../../"><span data-icon="back"></span><span>游戏大厅</span></a>
+      <button class="icon-button" id="soundButton" data-command="sound" aria-label="开启音效" title="开启音效"><span data-icon="soundOff"></span></button>
+      <button class="rules-link" data-command="rules"><span data-icon="book"></span><span>玩法</span></button>
+    </nav>
+  </header>
+
+  <main class="page-wrap">
+    <section class="intro" aria-labelledby="pageTitle">
+      <div><p class="eyebrow"><span class="tiny-leaf" data-icon="leaf"></span> 给脑袋放个小假</p><h1 id="pageTitle">一格一格，<span>探索小小世界。</span></h1><p class="intro-copy">顺着数字找线索，绕开地雷。今天的好运，藏在下一格。</p></div>
+      <div class="intro-note"><span data-icon="shield"></span><span>第一步，稳稳的。<small>首次点击及周围八格都安全</small></span></div>
+    </section>
+
+    <div id="connectionBanner" class="connection-banner" role="alert" hidden><span id="connectionText"></span><button data-command="retry">重新连接 <span>↗</span></button></div>
+
+    <div class="main-grid">
+      <section class="game-card" aria-label="扫雷游戏">
+        <div class="game-settings">
+          <div class="settings-heading"><span class="section-label"><span data-icon="compass"></span>选一片林地</span><div class="mode-picker" role="group" aria-label="游戏模式"><button data-mode="classic" aria-pressed="true" class="selected">自由探索</button><button data-mode="daily" aria-pressed="false"><span data-icon="sun"></span>每日挑战</button></div></div>
+          <div class="difficulty-picker" role="group" aria-label="扫雷难度">
+            <button data-difficulty="easy" aria-pressed="true" class="difficulty-option selected"><span class="difficulty-icon" data-icon="leaf"></span><span class="difficulty-copy"><b>林间小径 <small>简单</small></b><span>9 × 9<span class="meta-dot">·</span>10 颗地雷</span></span><span class="difficulty-check" data-icon="check"></span></button>
+            <button data-difficulty="normal" aria-pressed="false" class="difficulty-option"><span class="difficulty-icon" data-icon="trees"></span><span class="difficulty-copy"><b>深林营地 <small>普通</small></b><span>12 × 12<span class="meta-dot">·</span>24 颗地雷</span></span><span class="difficulty-check" data-icon="check"></span></button>
+            <button data-difficulty="hard" aria-pressed="false" class="difficulty-option"><span class="difficulty-icon" data-icon="mountain"></span><span class="difficulty-copy"><b>雾中山谷 <small>困难</small></b><span>16 × 16<span class="meta-dot">·</span>40 颗地雷</span></span><span class="difficulty-check" data-icon="check"></span></button>
+          </div>
+          <p class="daily-strip" id="dailyStrip" hidden><span data-icon="sun"></span><span id="dailyStripText"></span><button data-command="share" aria-label="复制每日挑战链接">邀朋友来挑战 <span>↗</span></button></p>
+        </div>
+
+        <div class="play-area">
+          <div class="game-hud">
+            <div class="hud-metrics"><div class="hud-item flag-metric"><span data-icon="flag"></span><span><b id="flagsRemaining">10</b><small>剩余旗帜</small></span></div><div class="hud-item"><span data-icon="clock"></span><span><b id="elapsedTime">00:00</b><small id="clockCaption">探索用时</small></span></div><div class="hud-item moves-metric"><span data-icon="footprints"></span><span><b id="moveCount">0</b><small>探索步数</small></span></div></div>
+            <div class="hud-actions"><button class="icon-button" id="pauseButton" data-command="pause" aria-label="暂停探险" title="暂停探险" disabled><span data-icon="pause"></span></button><button class="icon-button" id="restartButton" data-command="restart" aria-label="重新开始" title="重新开始" disabled><span data-icon="restart"></span></button><button class="icon-button fullscreen-button" data-command="fullscreen" aria-label="全屏探索" title="全屏探索"><span data-icon="expand"></span></button></div>
+          </div>
+
+          <div class="board-stage" id="boardStage">
+            <div class="board-scroll" id="boardScroll"><div class="mine-board idle" id="board" role="group" aria-label="扫雷棋盘"></div></div>
+            <div class="board-overlay" id="readyOverlay"><div class="ready-compass" data-icon="compass"></div><p class="eyebrow">A SMALL ADVENTURE AWAITS</p><h2 id="readyTitle">从林间小径出发。</h2><p id="readyCopy">不用赶路，第一步一定安全。</p><button class="button button-primary" id="startButton" data-command="start" disabled>正在连接营地…</button><span class="ready-footnote">随时开玩<span>·</span>游客也能参加</span></div>
+            <div class="board-overlay pause-overlay" id="pauseOverlay" hidden><span class="pause-leaf" data-icon="leaf"></span><h2>林地在等你。</h2><p id="pauseCopy">喝口水，回来继续探索。</p><button class="button button-primary" data-command="resume"><span data-icon="play"></span>继续探险</button></div>
+          </div>
+
+          <div class="tool-row"><div class="tool-picker" role="group" aria-label="点击格子的操作"><button id="revealTool" data-tool="reveal" class="selected" aria-pressed="true"><span data-icon="pointer"></span>探索</button><button id="flagTool" data-tool="flag" aria-pressed="false"><span data-icon="flag"></span>插旗</button></div><span class="tool-hint" id="toolHint">按 F 切换工具</span><button class="inspect-result" id="resultButton" data-command="result" hidden>本局手记 <span>↗</span></button></div>
+          <div class="progress-row"><span>已探索 <b id="progressCount">0</b><span id="safeCount"> / 71</span></span><div class="progress-track" role="progressbar" aria-label="安全格探索进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack"><span id="progressFill"></span></div><span id="progressPercent">0%</span></div>
+          <p class="board-status" id="statusText" role="status">选好难度，来一场小小的探险。</p>
+        </div>
+        <footer class="game-foot"><span data-icon="pointer"></span><span class="desktop-instructions">左键探索<span>·</span>右键插旗<span>·</span>点数字快速展开</span><span class="touch-instructions">轻点探索<span>·</span>长按插旗<span>·</span>大棋盘可左右滑动</span><button data-command="rules">新手小抄 <span>↗</span></button></footer>
+      </section>
+
+      <aside class="sidebar" aria-label="探险手记与每日挑战">
+        <figure class="forest-art"><img src="assets/forest-hero.webp" alt="小熊猫向导和一张插着橘色旗帜的林间棋盘，周围是温柔的绿色植物" width="1536" height="1024" fetchpriority="high"><figcaption><span class="art-caption-mark">✦</span><span>慢一点，也能走很远。<small>GOOD THINGS TAKE LITTLE STEPS.</small></span></figcaption><span class="art-issue">FOREST CLUB / 001</span></figure>
+        <section class="daily-card"><div class="daily-heading"><span class="sun-badge" data-icon="sun"></span><span class="eyebrow">TODAY'S LITTLE CHALLENGE</span><span class="daily-dot"></span></div><h2>今天，一起探同一片林。</h2><p>相同雷区，相同起点。<br>把你的用时，分享给朋友。</p><div class="daily-card-bottom"><span id="dailyDate">每日 00:00 换新</span><button class="daily-go" data-command="daily">去挑战 <span data-icon="arrow"></span></button></div></section>
+        <section class="record-card"><div class="record-heading"><h2><span data-icon="notebook"></span>我的探险手记</h2><span id="recordSource">本机记录</span></div><div class="record-summary"><div><b id="totalGames">0</b><span>次探险</span></div><div><b id="totalWins">0</b><span>次成功</span></div><div><b id="winRate">—</b><span>成功率</span></div></div><div class="best-heading"><span data-icon="trophy"></span><span id="bestCaption">自由探索 · 最佳用时</span></div><dl class="best-times"><div><dt><span class="level-dot easy-dot"></span>林间小径</dt><dd id="bestEasy">—</dd></div><div><dt><span class="level-dot normal-dot"></span>深林营地</dt><dd id="bestNormal">—</dd></div><div><dt><span class="level-dot hard-dot"></span>雾中山谷</dt><dd id="bestHard">—</dd></div></dl><button class="record-login" id="recordLogin" data-command="login">登录，把手记带在身边 <span>↗</span></button><p class="record-account-note" id="recordAccountNote" hidden>和游戏大厅共用一个账号。</p></section>
+      </aside>
+    </div>
+    <footer class="page-footer"><span>一片小小的林地，一段自己的时间。</span><span>Made with <span class="footer-heart">♥</span> by lucky</span></footer>
+  </main>
+
+  <dialog class="modal rules-modal" id="rulesDialog" aria-labelledby="rulesTitle"><div class="modal-topline"><span class="eyebrow">YOUR POCKET FIELD GUIDE</span><button class="modal-close" data-command="closeDialog" aria-label="关闭玩法说明"><span data-icon="close"></span></button></div><h2 id="rulesTitle">带上这份新手小抄。</h2><p class="modal-description">把所有安全格探索完，就算成功。旗帜只是标记，不必把每一颗雷都找出来。</p><div class="rules-grid"><section><span class="rule-number">01</span><h3>第一步，放心点</h3><p>自由探索可点任意一格，首次点击及周围八格都安全；空白格会自动连锁展开。</p></section><section><span class="rule-number">02</span><h3>数字，就是线索</h3><p>数字代表周围八格里地雷的数量。数字 1，意味着周围藏着一颗雷。</p><div class="number-legend" aria-label="数字颜色示例"><span class="number-1">1</span><span class="number-2">2</span><span class="number-3">3</span><span class="number-4">4</span></div></section><section><span class="rule-number">03</span><h3>插旗，记住危险</h3><p>电脑右键、手机长按都能插旗；也可以切到「插旗」工具后轻点。再次操作可收旗。</p></section><section><span class="rule-number">04</span><h3>点数字，一起展开</h3><p>周围旗帜数与数字相等时，点数字会揭开其余相邻格。旗插错了，仍会触雷。</p></section></div><div class="rules-note"><span data-icon="sun"></span><p><b>每日挑战</b>采用北京时间当天的固定雷区与中心起点。开始后立即计时，暂停和离开页面也会计时；自由探索从首次揭格计时，暂停会停表。</p></div><p class="rules-score">探索得分由完成度、难度、正确标记和通关速度组成。这里只比推理与用时，随时可以再来一局。</p><div class="keyboard-guide"><span><kbd>F</kbd> 切换工具</span><span><kbd>Space</kbd> 暂停 / 继续</span><span><kbd>↑ ↓ ← →</kbd> 移动</span><span><kbd>Enter</kbd> 操作格子</span></div><button class="button button-primary rules-done" data-command="closeDialog">知道了，去探索 <span data-icon="arrow"></span></button></dialog>
+
+  <dialog class="modal result-modal" id="resultDialog" aria-labelledby="resultTitle"><div class="modal-topline"><span class="eyebrow">A PAGE IN YOUR FIELD NOTES</span><button class="modal-close" data-command="closeDialog" aria-label="关闭本局手记"><span data-icon="close"></span></button></div><div class="result-emblem" id="resultEmblem" data-icon="leaf"></div><span class="personal-best" id="personalBest" hidden><span data-icon="trophy"></span>新的最佳用时</span><h2 id="resultTitle">这一片，安全了。</h2><p class="modal-description" id="resultCopy"></p><div class="result-metrics"><div><span>探索用时</span><b id="resultTime">00:00</b></div><div><span>探索步数</span><b id="resultMoves">0</b></div><div><span>林地完成度</span><b id="resultProgress">0%</b></div></div><div class="result-score"><span>本次探索得分</span><b id="resultScore">0<small>分</small></b></div><p class="result-saved" id="resultSaved"></p><div class="modal-actions"><button class="button button-soft" data-command="closeDialog">看看这片林地</button><button class="button button-primary" id="playAgainButton" data-command="again">再探一片 <span data-icon="arrow"></span></button></div><button class="result-share" data-command="shareResult">分享这次探险 <span>↗</span></button></dialog>
+
+  <dialog class="modal confirm-modal" id="confirmDialog" aria-labelledby="confirmTitle"><div class="modal-topline"><span class="eyebrow">A NEW PATH</span><button class="modal-close" data-command="closeDialog" aria-label="取消重新开始"><span data-icon="close"></span></button></div><h2 id="confirmTitle">换一片林地？</h2><p class="modal-description" id="confirmCopy">当前探险还在进行中，重新出发会清空这一局的进度。</p><div class="modal-actions"><button class="button button-soft" data-command="closeDialog">继续当前探险</button><button class="button button-primary" data-command="confirmStart">重新出发 <span data-icon="arrow"></span></button></div></dialog>
+  <div class="game-toast" id="toast" role="status"></div>
+  <div class="sr-only" id="liveAnnouncements" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="/web/js/account.ts"></script>
+  <script type="module" src="app.ts"></script>
+</body>
+</html>

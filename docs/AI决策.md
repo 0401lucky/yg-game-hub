@@ -4,14 +4,14 @@
 
 ## 1. 核心架构
 
-决策本身是一份**纯函数**：[shared/bot.mjs](file:///d:/zc/极简飞行棋/shared/bot.mjs) 的 `chooseAction(state, player, { difficulty })`。它只读引擎状态，返回一个待执行的动作，前端与服务端共用同一份，因此单机和联机的 AI 走法完全一致。
+决策本身是一份**纯函数**：[shared/bot.ts](../games/shared/bot.ts) 的 `chooseAction(state, player, { difficulty })`。它只读引擎状态，返回一个待执行的动作，前端与服务端共用同一份，因此单机和联机的 AI 走法完全一致。
 
 出手的驱动方式分两种：
 
-- **单机 / 本地多人**：由前端 [botController.js](file:///d:/zc/极简飞行棋/frontend/js/botController.js) 驱动。先停 200ms - 300ms 像在思考，再照动作走客户端既有的点击路径（掷骰 / 选子 / 用道具 / 传送），复用同一套动画与音效；出手后留 300ms 余量解锁，避免同一回合被连点。
-- **联机**：由服务端 [botDriver.cjs](file:///d:/zc/极简飞行棋/backend/botDriver.cjs) 驱动。服务端算出动作并裁决，再广播快照；节奏看各端回执——客户端把这一帧演完才出下一手，没人回执时退回估时表。开局第一手会等 1500ms，让各端铺好牌桌。
+- **单机 / 本地多人**：由前端 [botController.ts](../games/flight/js/botController.ts) 驱动。先停 200ms - 300ms 像在思考，再照动作走客户端既有的点击路径（掷骰 / 选子 / 用道具 / 传送），复用同一套动画与音效；出手后留 300ms 余量解锁，避免同一回合被连点。
+- **联机**：由服务端 [botDriver.ts](../games/flight/server/botDriver.ts) 驱动。服务端算出动作并裁决，再广播快照；节奏看各端回执——客户端把这一帧演完才出下一手，没人回执时退回估时表。开局第一手会等 1500ms，让各端铺好牌桌。
 
-两种驱动都不碰规则：规则全在 [engine.mjs](file:///d:/zc/极简飞行棋/shared/engine.mjs)，AI 只负责「选哪个动作」。
+两种驱动都不碰规则：规则全在 [engine.ts](../games/shared/engine.ts)，AI 只负责「选哪个动作」。
 
 ## 2. 难度等级
 

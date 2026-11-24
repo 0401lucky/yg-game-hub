@@ -1,0 +1,1395 @@
+/* 主容器 */
+.index-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 20px 20px;
+    background: var(--bg-primary);
+    box-sizing: border-box;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+/* 标题区域 */
+.index-title {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.index-title h1 {
+    font-weight: bold;
+    font-size: 2.8rem;
+    margin: 0;
+    text-shadow: none;
+    letter-spacing: 2px;
+}
+
+.rainbow-title span {
+    text-shadow: 0px 1px 1px var(--shadow-3);
+}
+
+/* 多色标题样式 */
+.rainbow-title {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+}
+
+.rainbow-title span {
+    display: inline-block;
+    transform-origin: center bottom;
+}
+
+.rainbow-title span {
+    display: inline-block;
+    transform-origin: center bottom;
+    animation: titleJump 1s steps(1, end) infinite;
+}
+
+.rainbow-title span:nth-child(1) {
+    color: var(--player-1-color);
+    animation-delay: 0s;
+}
+
+.rainbow-title span:nth-child(2) {
+    color: var(--player-2-color);
+    animation-delay: 0.2s;
+}
+
+.rainbow-title span:nth-child(3) {
+    color: var(--player-3-color);
+    animation-delay: 0.4s;
+}
+
+.rainbow-title span:nth-child(4) {
+    color: var(--player-4-color);
+    animation-delay: 0.5s;
+}
+
+.rainbow-title span:nth-child(5) {
+    color: var(--player-1-color);
+    animation-delay: 0.8s;
+}
+
+@keyframes titleJump {
+
+    0%,
+    100% {
+        transform: rotate(-3deg);
+    }
+
+    50% {
+        transform: rotate(3deg);
+    }
+}
+
+/* 游戏提示轮播 */
+.game-tips {
+    margin-top: 15px;
+    height: 18px;
+    overflow: hidden;
+    position: relative;
+}
+
+.tip-content {
+    font-size: 0.8rem;
+    color: var(--font-faint);
+    text-align: center;
+    line-height: 18px;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, opacity;
+}
+
+.tip-content.slide-up-out {
+    transform: translateY(-18px);
+    opacity: 0;
+}
+
+.tip-content.slide-up-in {
+    transform: translateY(18px);
+    opacity: 0;
+}
+
+.tip-content.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.index-footer {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    text-align: center;
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+}
+
+.footer-feedback {
+    opacity: 0.8;
+}
+
+.footer-link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.footer-link:hover {
+    opacity: 0.65;
+}
+
+.footer-split {
+    margin: 0 8px;
+    opacity: 0.5;
+}
+
+.footer-copyright {
+    opacity: 0.8;
+}
+
+.footer-version {
+    opacity: 0.55;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    user-select: all;
+}
+.qq-group-number{
+    user-select: all;
+}
+.index-footer .heart {
+    color: #f2687b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 0 2px;
+}
+
+.index-footer a {
+    color: var(--text-primary);
+    text-decoration: none;
+    text-shadow: none;
+}
+
+.index-footer .heart:hover,
+.index-footer a:hover {
+    transform: scale(1.2);
+}
+
+/* 内容区域 */
+.index-content {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100%;
+    perspective: 1200px;
+    box-sizing: border-box;
+}
+
+@keyframes panelFlipIn {
+    0% {
+        transform: rotateY(-180deg);
+    }
+
+    100% {
+        transform: rotateY(0deg);
+    }
+}
+
+.index-content .control-panel,
+.index-content .main-menu-container {
+    animation: panelFlipIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+    position: relative;
+}
+
+.local-multiplayer-config,
+.online-multiplayer-config,
+.ai-battle-config {
+    animation: panelFlipIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+    position: relative;
+}
+
+/* 联机内部的房间列表和房间配置面板取消翻转动画，避免在同一个大面板内切换时过度抖动 */
+.room-selection,
+.room-config {
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+    position: relative;
+}
+
+/* 模拟卡片背面，填补翻转时的视觉空白 */
+.index-content .control-panel::before,
+.index-content .main-menu-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-light-1);
+    border-radius: 15px;
+    border: 2.5px solid var(--border-light);
+    transform: rotateY(180deg);
+    backface-visibility: hidden;
+    z-index: -1;
+    box-sizing: border-box;
+    box-shadow: 0 4px 4px var(--shadow-3);
+}
+
+.index-content .control-panel {
+    width: 400px;
+    max-width: 95%;
+    padding: 0;
+    margin: 0 auto;
+}
+
+.player-config-panel {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.index-content .control-content {
+    --control-content-padding-right: 10px;
+    width: 100%;
+    padding: 10px;
+    background: var(--bg-medium);
+    backdrop-filter: blur(10px);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/* 区域样式 */
+.player-setup-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+/* 房间信息样式 */
+.room-info-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.room-info {
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    background: transparent;
+    border-radius: 10px;
+    border: 2px solid var(--border-light);
+    box-shadow: none;
+}
+
+.room-privacy-toggle {
+    margin-top: 10px;
+    display: inline-flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.privacy-toggle-btn {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 2px solid var(--border-light);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+}
+
+.privacy-toggle-btn:hover {
+    font-weight: bold;
+    background: var(--pink-soft);
+}
+.privacy-toggle-btn.active {
+    background: var(--pink-soft);
+}
+
+/* 选中/悬停时底是固定的浅粉，文字必须跟着固定成深墨，否则深色模式下会变白字压浅底 */
+:root[data-theme="dark"] .privacy-toggle-btn:hover,
+:root[data-theme="dark"] .privacy-toggle-btn.active {
+    color: var(--on-color-ink-strong);
+}
+.room-code-display {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+    justify-content: center;
+}
+
+.room-code-label {
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.room-code {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    background: transparent;
+    padding: 2px 8px;
+    border-radius: 5px;
+    border: 2px solid var(--border-light);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: all;
+    line-height: 18px;
+    min-width: 55px;
+    text-align: center;
+    user-select: none;
+}
+
+.room-code:hover {
+    background: #9ddfb5;
+    box-shadow: none;
+}
+
+.player-count-info {
+    text-align: center;
+    color: var(--white);
+    font-size: 18px;
+}
+
+.game-config-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary-soft);
+    font-size: 14px;
+    padding-top: 5px;
+    border-top: 1px solid var(--border-soft);
+    margin-top: 5px;
+}
+
+.color-selection h4,
+.username-setting h4,
+.piece-count-setting h4,
+.bot-players-preview h4,
+.player-count-setting h4,
+.rules-content h4 {
+    margin: 10px;
+    color: var(--text-primary);
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.rules-content h5 {
+    color: var(--text-primary);
+    margin: 0px 0 6px 0;
+    font-size: 15px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.color-options {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    gap: 10px;
+    justify-content: center;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.color-option {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    align-items: start;
+    justify-items: center;
+    gap: 6px;
+    height: 100%;
+}
+
+.color-circle {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    border: 2px solid;
+    background: transparent;
+    transition: all 0.3s ease;
+    position: relative;
+    border-color: transparent;
+    box-shadow: 0 2px 6px var(--shadow-2);
+    color: var(--gray-mid);
+}
+
+.offline-countdown-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background: var(--scrim);
+    color: var(--white);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.kick-player-btn {
+    position: absolute;
+    top: -10px;
+    right: -12px;
+    width: 15px;
+    height: 15px;
+    border: 1.5px solid var(--border-light);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 4;
+}
+
+.kick-player-btn svg {
+    width: 8px;
+    height: 8px;
+    color: var(--text-primary);
+}
+
+.kick-player-btn:hover {
+    transform: scale(1.1);
+}
+
+.player-1-color {
+    border-color: var(--player-1-color);
+}
+
+.player-2-color {
+    border-color: var(--player-2-color);
+}
+
+.player-3-color {
+    border-color: var(--player-3-color);
+}
+
+.player-4-color {
+    border-color: var(--player-4-color);
+}
+
+.color-option .player-1-color {
+    --seat-accent: var(--player-1-border);
+    --seat-fill: var(--player-1-fill);
+}
+
+.color-option .player-2-color {
+    --seat-accent: var(--player-2-border);
+    --seat-fill: var(--player-2-fill);
+}
+
+.color-option .player-3-color {
+    --seat-accent: var(--player-3-border);
+    --seat-fill: var(--player-3-fill);
+}
+
+.color-option .player-4-color {
+    --seat-accent: var(--player-4-border);
+    --seat-fill: var(--player-4-fill);
+}
+
+.color-option:not(.selected):hover .color-circle {
+    transform: translateY(-2px) scale(1.08);
+    background: var(--seat-fill);
+    border-color: var(--seat-accent);
+    box-shadow: 0 8px 16px -8px var(--seat-accent);
+}
+
+.color-option.selected .color-circle {
+    box-shadow: 0 3px 8px var(--shadow-2);
+}
+
+.color-option.selected .player-1-color {
+    background: var(--player-1-color);
+    border: 2px solid var(--player-1-border);
+    box-shadow: 0 3px 8px var(--shadow-2);
+    color: var(--white);
+}
+
+.color-option.selected .player-1-color .multiplayer-emoji svg,
+.color-option.selected .player-1-color .multiplayer-emoji svg path {
+    fill: var(--white) !important;
+    stroke: var(--white) !important;
+    color: var(--white) !important;
+}
+
+.color-option.selected .player-2-color {
+    background: var(--player-2-color);
+    border: 2px solid var(--player-2-border);
+    box-shadow: 0 3px 8px var(--shadow-2);
+    color: var(--white);
+}
+
+.color-option.selected .player-2-color .multiplayer-emoji svg,
+.color-option.selected .player-2-color .multiplayer-emoji svg path {
+    fill: var(--white) !important;
+    stroke: var(--white) !important;
+    color: var(--white) !important;
+}
+
+.color-option.selected .player-3-color {
+    background: var(--player-3-color);
+    border: 2px solid var(--player-3-border);
+    box-shadow: 0 3px 8px var(--shadow-2);
+    color: var(--white);
+}
+
+.color-option.selected .player-3-color .multiplayer-emoji svg,
+.color-option.selected .player-3-color .multiplayer-emoji svg path {
+    fill: var(--white) !important;
+    stroke: var(--white) !important;
+    color: var(--white) !important;
+}
+
+.color-option.selected .player-4-color {
+    background: var(--player-4-color);
+    border: 2px solid var(--player-4-border);
+    box-shadow: 0 3px 8px var(--shadow-2);
+    color: var(--white);
+}
+
+.color-option.selected .player-4-color .multiplayer-emoji svg,
+.color-option.selected .player-4-color .multiplayer-emoji svg path {
+    fill: var(--white) !important;
+    stroke: var(--white) !important;
+    color: var(--white) !important;
+}
+
+.player-nickname {
+    font-size: 12px;
+    color: var(--text-primary-soft);
+    text-align: center;
+    max-width: 58px;
+    white-space: normal;
+    word-break: break-all;
+    line-height: 1.2;
+}
+
+.player-nickname-me {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.player-ready-status {
+    font-size: 11px;
+    text-align: center;
+    padding: 2px 6px;
+    border-radius: var(--radius-base);
+    font-weight: 500;
+    line-height: 14px;
+}
+
+.player-ready-status.ready {
+    color: var(--text-primary);
+    background: rgba(124, 175, 136, 0.16);
+    border: 1.5px solid rgba(124, 175, 136, 0.45);
+}
+
+.player-ready-status.host {
+    color: var(--text-primary);
+    background: rgba(94, 164, 196, 0.16);
+    border: 1.5px solid rgba(94, 164, 196, 0.45);
+}
+
+.player-ready-status.not-ready,
+.player-ready-status.offline {
+    color: #6b7280;
+    background: rgba(120, 130, 145, 0.12);
+    border: 1.5px solid rgba(120, 130, 145, 0.35);
+}
+
+
+/* 人数选择器样式 */
+.player-count-setting {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.player-count-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.player-count-options {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.player-count-option {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--border-light);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.player-count-option:hover,
+.player-count-option.selected {
+    border: 2px solid var(--lightning);
+    box-shadow: 0 1px 3px var(--shadow-2);
+}
+
+/* 玩家设置区域 */
+.players-setup-area {
+    margin-top: 15px;
+}
+
+.player-setup-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0px;
+    margin-bottom: 10px;
+    border-radius: var(--radius-base);
+}
+
+.player-setup-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.player-setup-item h5 {
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* 本地多人配置面板 */
+
+.piece-count-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.piece-count-options {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 5px 0px;
+}
+
+.piece-count-option {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--border-light);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.piece-count-option:hover,
+.piece-count-option.selected {
+    border: 2px solid var(--periwinkle);
+    background: var(--periwinkle-soft);
+    box-shadow: 0 1px 3px var(--shadow-1);
+}
+
+.local-piece-count-options {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 5px 0px;
+}
+
+.local-piece-count-option {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--border-light);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.local-piece-count-option:hover,
+.local-piece-count-option.selected {
+    border: 2px solid var(--periwinkle);
+    background: var(--periwinkle-soft);
+    box-shadow: 0 1px 3px var(--shadow-1);
+}
+
+.username-input-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.username-input-with-icon {
+    position: relative;
+    width: 75%;
+    display: flex;
+    align-items: center;
+}
+
+.username-input {
+    padding: 8px 10px;
+
+    padding-right: 48px;
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-base);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.player-setup-row .username-input-group {
+    width: auto;
+    max-width: 160px;
+}
+
+.player-setup-row .username-input {
+    padding-right: 10px;
+}
+
+.form-input:focus {
+    color: var(--text-primary);
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: none;
+}
+
+.form-input::placeholder {
+    color: var(--white);
+}
+
+.nickname-dice-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.nickname-dice-btn.clicking {
+    animation: diceTilt 0.5s ease-out;
+}
+
+/* 提示文本样式 */
+.hint-text {
+    font-size: 0.8rem;
+    color: var(--font-faint);
+    text-align: center;
+}
+
+/* 道具模式设置 */
+.skill-mode-setting {
+    margin: 8px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.toggle-option-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 20px;
+    border: 2px solid var(--border-light);
+    gap: 15px;
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+.toggle-option-group-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+.toggle-group-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #aaa;
+    color: var(--white);
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    user-select: none;
+    transition: background 0.15s;
+}
+.toggle-group-help:hover {
+    background: #888;
+}
+
+.toggle-option {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.toggle-label-text {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 500;
+    text-shadow: none;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 56px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.toggle-switch input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    border: 2px solid var(--border-light);
+    border-radius: 16px;
+    transition: all 0.3s ease-in-out;
+}
+
+.toggle-slider::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 4px;
+    top: 2.5px;
+    background: var(--text-primary);
+    border-radius: var(--radius-full);
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 1px 2px var(--shadow-2);
+}
+
+.toggle-switch input[type="checkbox"]:checked+.toggle-slider {
+    background: var(--blue-soft);
+    border-color: var(--blue-line);
+    box-shadow: none;
+}
+
+.toggle-switch input[type="checkbox"]:checked+.toggle-slider::after {
+    transform: translateX(24px);
+    background: var(--white);
+    box-shadow: 0 2px 4px var(--shadow-3);
+}
+
+.toggle-switch input[type="checkbox"]:active+.toggle-slider::after {
+    width: 30px;
+}
+
+.toggle-switch input[type="checkbox"]:checked:active+.toggle-slider::after {
+    transform: translateX(18px);
+}
+
+.skill-mode-hint {
+    font-size: 0.8rem;
+    color: var(--font-faint);
+    padding-left: 28px;
+    line-height: 1.4;
+}
+
+/* 表情切换器 */
+.emoji-switcher {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 5px;
+}
+
+.emoji-nav-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 40px;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    transform: translateY(-15px);
+}
+
+.emoji-nav-btn:hover {
+    border-color: var(--primary-color);
+    text-shadow: none;
+}
+
+.current-emoji-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 80px;
+}
+
+/* 表情预览区域 - 与player-avatar相同的样式 */
+.current-emoji-display .emoji-preview {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    /* 默认状态下透明边框，等待颜色分配 */
+    border: 3px solid transparent;
+    box-shadow: 0 2px 6px var(--shadow-2);
+    color: var(--gray-mid);
+}
+
+/* 表情内容容器 */
+.emoji-preview .emoji-content {
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: currentColor;
+}
+
+.emoji-preview .emoji-content svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* 玩家颜色样式 - 已分配玩家使用填充背景和白色表情 */
+.emoji-preview.player-1-color {
+    background: var(--player-1-color);
+    border: 2px solid var(--player-1-border);
+    box-shadow: 0 3px 8px var(--shadow-3);
+    color: var(--white);
+}
+
+.emoji-preview.player-2-color {
+    background: var(--player-2-color);
+    border: 2px solid var(--player-2-border);
+    box-shadow: 0 3px 8px var(--shadow-3);
+    color: var(--white);
+}
+
+.emoji-preview.player-3-color {
+    background: var(--player-3-color);
+    border: 2px solid var(--player-3-border);
+    box-shadow: 0 3px 8px var(--shadow-3);
+    color: var(--white);
+}
+
+.emoji-preview.player-4-color {
+    background: var(--player-4-color);
+    border: 2px solid var(--player-4-border);
+    box-shadow: 0 3px 8px var(--shadow-3);
+    color: var(--white);
+}
+
+.current-emoji-display .emoji-preview svg {
+    width: 100%;
+    height: 100%;
+}
+
+.emoji-name {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    text-align: center;
+    font-weight: 500;
+}
+
+.bot-players {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    min-height: 73.5px;
+}
+
+/* AI添加选项样式 */
+.bot-add-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 0px 12px;
+    background: transparent;
+    border-radius: var(--radius-base);
+    cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.4s ease;
+    border: 1px solid transparent;
+    min-height: 72px;
+}
+
+
+.bot-add-option .color-circle,
+.bot-player .difficulty-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    border: 2px solid;
+    background: transparent;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px var(--shadow-2);
+}
+
+.bot-add-option .add-icon {
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: bold;
+    text-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
+}
+
+.black-icon {
+    width: 15px;
+    height: 15px;
+    color: var(--ui-hover-color);
+}
+
+.bot-add-option .placeholder-text {
+    color: transparent;
+    font-size: 0.9rem;
+    height: 1.2em;
+}
+
+.bot-add-option .player-1-color {
+    --bot-accent: var(--player-1-border);
+    --bot-fill: var(--player-1-fill);
+}
+
+.bot-add-option .player-2-color {
+    --bot-accent: var(--player-2-border);
+    --bot-fill: var(--player-2-fill);
+}
+
+.bot-add-option .player-3-color {
+    --bot-accent: var(--player-3-border);
+    --bot-fill: var(--player-3-fill);
+}
+
+.bot-add-option .player-4-color {
+    --bot-accent: var(--player-4-border);
+    --bot-fill: var(--player-4-fill);
+}
+
+.bot-add-option .color-circle:hover {
+    background: var(--bot-fill);
+    border-color: var(--bot-accent);
+    box-shadow: 0 8px 18px -8px var(--bot-accent);
+}
+
+.bot-add-option .color-circle:hover .add-icon {
+    color: var(--bot-accent);
+    transform: rotate(90deg);
+}
+
+/* 已添加的AI玩家样式 */
+.bot-player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 0px 12px;
+    border-radius: var(--radius-base);
+    position: relative;
+    min-height: 72px;
+}
+
+.bot-player .color-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    border: 2px solid;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px var(--shadow-1);
+}
+
+.bot-player .remove-btn {
+    position: absolute;
+    top: -5px;
+    right: -2px;
+    width: 15px;
+    height: 15px;
+    border: 1.5px solid var(--border-light);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.bot-player .remove-btn svg {
+    width: 8px;
+    height: 8px;
+    color: var(--text-primary);
+}
+
+.bot-player .remove-btn:hover {
+    transform: scale(1.1);
+}
+
+.bot-add-option .player-1-color,
+.bot-player .player-1-color {
+    border-color: var(--player-1-border);
+}
+
+.bot-add-option .player-2-color,
+.bot-player .player-2-color {
+    border-color: var(--player-2-border);
+}
+
+.bot-add-option .player-3-color,
+.bot-player .player-3-color {
+    border-color: var(--player-3-border);
+}
+
+.bot-add-option .player-4-color,
+.bot-player .player-4-color {
+    border-color: var(--player-4-border);
+}
+
+/* 激活状态的AI玩家样式 */
+.bot-player .player-1-color {
+    background: var(--player-1-fill);
+}
+
+.bot-player .player-2-color {
+    background: var(--player-2-fill);
+}
+
+.bot-player .player-3-color {
+    background: var(--player-3-fill);
+}
+
+.bot-player .player-4-color {
+    background: var(--player-4-fill);
+}
+
+.bot-player span {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.bot-player .difficulty-text {
+    color: var(--on-color-ink-strong);
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-shadow: none;
+    pointer-events: none;
+}
+
+.start-game-section {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.start-game-section .control-btn {
+    position: static;
+    padding: 12px 24px;
+    font-size: 16px;
+}
+
+/* 文字跟「道具模式 / 欢乐模式」那排开关保持一套 */
+.initial-energy-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 500;
+    text-shadow: none;
+}
+
+.initial-energy-value {
+    font-variant-numeric: tabular-nums;
+}
+
+.initial-energy-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 2px;
+    margin: 10px 0;
+    border-radius: 1px;
+    /* 已选段实色填充：--fill 由 JS 按档位更新 */
+    background: linear-gradient(to right, var(--text-primary) var(--fill, 0%), var(--bg-light-2) var(--fill, 0%));
+    cursor: pointer;
+}
+
+.initial-energy-slider::-webkit-slider-runnable-track {
+    height: 2px;
+    background: none;
+}
+
+.initial-energy-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    margin-top: -5px;
+    border: none;
+    border-radius: 50%;
+    background: var(--text-primary);
+}
+
+.initial-energy-slider::-moz-range-track {
+    height: 2px;
+    background: none;
+}
+
+.initial-energy-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: none;
+    border-radius: 50%;
+    background: var(--text-primary);
+}
+
+/* 对局回放：面板里只放一句说明和一个选文件的入口 */
+
+/* 固定高度的列表区：条数变化、删掉一条都不会让面板跟着长缩，多了自己滚 */
+
+.recent-replay-tag {
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: var(--bg-light-2);
+    font-size: 11px;
+    color: var(--text-primary);
+}
+
+/* 模式那一枚上色：和首页三个入口同色（人机红 / 本地绿 / 联机蓝） */
+.recent-replay-tag.mode-ai {
+    background: var(--player-4-color);
+    color: var(--on-color-ink-strong);
+}
+
+.recent-replay-tag.mode-local {
+    background: var(--player-1-color);
+    color: var(--on-color-ink-strong);
+}
+
+.recent-replay-tag.mode-online {
+    background: var(--player-3-color);
+    color: var(--on-color-ink-strong);
+}
+
+/* 整行是打开回放的入口，左右两个图标各管一件事 */
+
+.recent-replay-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.recent-replay-icon:hover {
+    background: var(--bg-light-2);
+}

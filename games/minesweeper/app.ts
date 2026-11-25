@@ -200,6 +200,7 @@ function renderRecords(): void {
     text(id, Number.isFinite(best) ? formatTime(best) : '—');
   }
   element('recordLogin').hidden = Boolean(state.user);
+  element('recordAccountNote').hidden = !state.user;
 }
 
 function updateLayout(): void {

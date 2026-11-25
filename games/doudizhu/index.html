@@ -15,7 +15,7 @@
   <header class="site-header">
     <a class="brand" href="./" aria-label="斗地主首页">
       <img src="favicon.svg" alt="" width="42" height="42">
-      <span><strong>斗地主</strong><small>MIDNIGHT CARD CLUB</small></span>
+      <span><strong>斗地主</strong></span>
     </a>
     <nav class="header-nav" aria-label="游戏导航">
       <a class="hub-link" href="../../">← <span>游戏大厅</span></a>
@@ -31,45 +31,36 @@
     <div class="landing-grid">
       <section class="landing-content" aria-labelledby="welcomeTitle">
         <div class="intro">
-          <p class="eyebrow"><span class="tiny-star">✦</span> 今晚的牌桌，为你留座</p>
           <h1 id="welcomeTitle">开一桌。<br><span>好牌，慢慢打。</span></h1>
-          <p class="intro-copy">三个人的牌局，两个人的默契。<br>叫上朋友，空着的座位交给人机。</p>
         </div>
 
         <section class="play-panel" aria-label="开始一局斗地主">
           <div class="nickname-field">
             <img src="assets/queen.webp" alt="" class="nickname-avatar" width="44" height="44">
-            <label for="nickname"><span>怎么称呼你</span><input id="nickname" autocomplete="nickname" maxlength="16" placeholder="今晚的牌友" aria-label="你的昵称"></label>
-            <span class="guest-tag" id="identityTag">随时开玩</span>
+            <label for="nickname"><input id="nickname" autocomplete="nickname" maxlength="16" placeholder="你的昵称" aria-label="你的昵称"></label>
           </div>
 
-          <div class="difficulty-heading"><span>选位陪你过招的牌友</span><span class="small-caps">AI DIFFICULTY</span></div>
           <div class="difficulty-grid" id="difficultyPicker" role="radiogroup" aria-label="人机难度">
-            <button class="difficulty-option" data-level="easy" role="radio" aria-checked="false"><span class="difficulty-icon" data-icon="leaf"></span><b>简单</b><small>温柔陪练</small></button>
-            <button class="difficulty-option selected" data-level="hard" role="radio" aria-checked="true"><span class="difficulty-icon" data-icon="crown"></span><b>困难</b><small>认真过招</small></button>
-            <button class="difficulty-option hell-option" data-level="hell" role="radio" aria-checked="false"><span class="difficulty-icon" data-icon="flame"></span><b>地狱</b><small>步步紧逼</small></button>
+            <button class="difficulty-option" data-level="easy" role="radio" aria-checked="false"><span class="difficulty-icon" data-icon="leaf"></span><b>简单</b></button>
+            <button class="difficulty-option selected" data-level="hard" role="radio" aria-checked="true"><span class="difficulty-icon" data-icon="crown"></span><b>困难</b></button>
+            <button class="difficulty-option hell-option" data-level="hell" role="radio" aria-checked="false"><span class="difficulty-icon" data-icon="flame"></span><b>地狱</b></button>
           </div>
-          <p class="difficulty-note" id="difficultyNote">规划拆牌，保留大牌，懂得配合农民队友。</p>
           <div class="start-buttons">
             <button id="soloButton" class="button button-gold" data-command="solo"><span data-icon="cards"></span>单人练习<span class="button-arrow">↗</span></button>
             <button id="createButton" class="button button-outline" data-command="create">创建好友房<span data-icon="arrow"></span></button>
           </div>
           <form class="join-form" id="joinForm">
-            <label for="roomCodeInput">朋友已经开桌？</label>
-            <div class="join-input-wrap"><input id="roomCodeInput" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" placeholder="六位房间码" aria-label="六位房间码" required><button type="submit" aria-label="加入好友房间">入座 <span data-icon="arrow"></span></button></div>
+            <div class="join-input-wrap"><input id="roomCodeInput" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" placeholder="输入房间码加入" aria-label="六位房间码" required><button type="submit" aria-label="加入好友房间">入座 <span data-icon="arrow"></span></button></div>
           </form>
         </section>
-        <p class="landing-footnote"><span class="online-dot"></span> 1–3 位玩家 · 人机补位 · 经典三人局</p>
       </section>
 
       <figure class="hero-art">
         <img src="assets/lounge-hero.webp" alt="奶油色的黑桃 A、狐狸 Joker 和红桃 Q，铺在深绿的午夜牌桌上" fetchpriority="high" width="1536" height="1024">
-        <div class="hero-art-top"><span>♠ ♥ ♣ ♦</span><span>EST. 2026</span></div>
-        <figcaption><span class="hero-caption-line"></span><span>一副好牌，一晚好时光。<small>YOUR FRIENDS. YOUR TABLE.</small></span></figcaption>
-        <span class="art-corner art-corner-top"></span><span class="art-corner art-corner-bottom"></span>
+        <figcaption><span class="hero-caption-line"></span><span>一副好牌，一晚好时光。</span></figcaption>
       </figure>
     </div>
-    <footer class="landing-footer"><span>不必凑齐三个人，先把快乐凑齐。</span><button data-command="rules">看看怎么玩 <span>↗</span></button></footer>
+    <footer class="landing-footer"><button data-command="rules">玩法说明 <span>↗</span></button></footer>
   </main>
 
   <main id="tableView" class="table-view" hidden aria-label="斗地主牌桌">
@@ -81,7 +72,6 @@
     <div id="tableSurface" class="table-surface">
       <div class="table-vignette" aria-hidden="true"></div>
       <div class="felt-ornament felt-ornament-left" aria-hidden="true">✧</div><div class="felt-ornament felt-ornament-right" aria-hidden="true">✧</div>
-      <div class="table-watermark" id="tableWatermark" aria-hidden="true"><span>♠</span><b>午夜牌桌</b><small>GOOD CARDS. GOOD COMPANY.</small></div>
 
       <div class="game-metrics" id="gameMetrics" hidden><span>底分 <b id="baseScore">1</b></span><i>×</i><span>倍数 <b id="multiplier">1</b></span><span class="round-number" id="roundNumber">第 1 局</span></div>
       <div class="bottom-deck" id="bottomDeck" hidden><span class="bottom-caption" id="bottomCaption">等待地主揭牌</span><div class="bottom-card-row" id="bottomCards"></div></div>
@@ -97,7 +87,7 @@
       <div id="turnPrompt" class="turn-prompt" role="status"></div>
       <div id="handWrap" class="hand-wrap" hidden>
         <div class="hand-meta"><span id="handLabel">你的手牌</span><span id="selectedLabel"></span><button class="sort-button" data-command="sort" title="按点数或牌型理牌"><span data-icon="sort"></span><span id="sortLabel">理牌</span></button></div>
-        <div id="hand" class="hand" role="group" aria-label="你的手牌，可以点击或拖动选择"></div>
+        <div id="hand" class="hand" role="group" aria-label="你的手牌，可以点击选择"></div>
       </div>
       <div id="actionBar" class="action-bar"></div>
       <div class="table-utilities" id="tableUtilities" hidden>
@@ -105,7 +95,7 @@
         <button class="utility-button" id="chatButton" data-command="chat" aria-label="快捷表情" aria-expanded="false"><span data-icon="chat"></span><span>表情</span></button>
         <button class="utility-button" id="autoButton" data-command="auto" aria-pressed="false"><span data-icon="robot"></span><span>托管</span></button>
       </div>
-      <div class="keyboard-hint" id="keyboardHint" hidden>拖动选牌 <span>·</span> Enter 出牌 <span>·</span> H 提示 <span>·</span> 空格不出</div>
+      <div class="keyboard-hint" id="keyboardHint" hidden></div>
       <aside id="recorderPanel" class="recorder-panel" hidden aria-label="记牌器"></aside>
       <div id="reactionMenu" class="reaction-menu" hidden></div>
       <div id="effectLayer" class="effect-layer" aria-hidden="true"></div>
@@ -114,24 +104,23 @@
 
   <dialog id="rulesDialog" class="modal rules-modal" aria-labelledby="rulesTitle">
     <button class="modal-close" data-command="closeDialog" aria-label="关闭玩法说明">×</button>
-    <p class="eyebrow">THE HOUSE RULES</p><h2 id="rulesTitle">好牌局，从这里开始。</h2>
-    <div class="rules-intro"><span class="rules-suit">♠</span><p>一副 54 张牌，三位玩家。<br>地主独自迎战，两位农民共同争胜。</p></div>
+    <h2 id="rulesTitle">玩法说明</h2>
     <div class="rules-grid">
-      <section><h3>01 · 叫地主</h3><p>每人 17 张牌，留下 3 张底牌。依次叫 1、2、3 分，后叫的分数必须更高；叫 3 分立即成为地主。无人叫分则重新发牌。地主拿走底牌并先出。</p></section>
-      <section><h3>02 · 轮流出牌</h3><p>按座位顺序出牌，用相同牌型、相同张数、更高点数压过上一手，也可以不出。连续两人不出，上一手的玩家重新领出；领出时不能不出。</p></section>
-      <section><h3>03 · 常用牌型</h3><p>单张、对子、三张、三带一、三带一对；五张起的顺子、三对起的连对、连续两组三张起的飞机。四带二可以带一对，四带两对需两种不同点数的对子。</p></section>
-      <section><h3>04 · 炸弹与胜负</h3><p>四张同点数是炸弹，可以压过普通牌型。双王是王炸，最大。任意一位玩家出完手牌即获胜，两位农民共享胜负。</p></section>
+      <section><h3>叫地主</h3><p>每人 17 张牌，留下 3 张底牌。依次叫 1、2、3 分，后叫的分数必须更高；叫 3 分立即成为地主。无人叫分则重新发牌。地主拿走底牌并先出。</p></section>
+      <section><h3>轮流出牌</h3><p>按座位顺序出牌，用相同牌型、相同张数、更高点数压过上一手，也可以不出。连续两人不出，上一手的玩家重新领出；领出时不能不出。</p></section>
+      <section><h3>常用牌型</h3><p>单张、对子、三张、三带一、三带一对；五张起的顺子、三对起的连对、连续两组三张起的飞机。四带二可以带一对，四带两对需两种不同点数的对子。</p></section>
+      <section><h3>炸弹与胜负</h3><p>四张同点数是炸弹，可以压过普通牌型。双王是王炸，最大。任意一位玩家出完手牌即获胜，两位农民共享胜负。</p></section>
     </div>
     <div class="rules-note">牌的大小：大王 ＞ 小王 ＞ 2 ＞ A ＞ K ＞ … ＞ 3。顺子、连对、飞机的机身不含 2 和王。飞机的单牌翅膀允许对子，不能带三张同点数，也不能使用机身点数。</div>
-    <div class="scoring-strip"><span>叫分 <b>×</b> 炸弹／王炸倍率 <b>×</b> 春天倍率</span><small>每次炸弹／王炸翻倍。地主获胜且农民未出过牌，或农民获胜且地主只出过一手，再翻倍。地主得失 2 份，农民各 1 份；积分仅用于这局娱乐结算。</small></div>
-    <div class="rules-ai"><h3>三位风格不同的牌友</h3><p><b>简单</b> 适合陪练　<b>困难</b> 拆牌规划、队友配合　<b>地狱</b> 记牌与手牌推演</p><small>人机只掌握自己的手牌和公开信息。叫分 15 秒、出牌 30 秒，超时会代走一手。断线后人机临时接管，重连后可以继续。</small></div>
-    <button class="button button-gold rules-done" data-command="closeDialog">知道了，开桌</button>
+    <div class="scoring-strip"><span>叫分 <b>×</b> 炸弹／王炸倍率 <b>×</b> 春天倍率</span><small>每次炸弹／王炸翻倍。地主获胜且农民未出过牌，或农民获胜且地主只出过一手，再翻倍。地主得失 2 份，农民各 1 份。</small></div>
+    <div class="rules-ai"><p><b>简单</b> 适合陪练　<b>困难</b> 拆牌规划、队友配合　<b>地狱</b> 记牌与手牌推演</p><small>叫分 15 秒、出牌 30 秒，超时会代走一手。断线后人机临时接管，重连后可以继续。</small></div>
+    <button class="button button-gold rules-done" data-command="closeDialog">知道了</button>
   </dialog>
 
   <dialog id="resultDialog" class="modal result-modal" aria-label="对局结算"></dialog>
   <dialog id="leaveDialog" class="modal leave-modal" aria-labelledby="leaveTitle">
-    <p class="eyebrow">TAKE A LITTLE BREAK</p><h2 id="leaveTitle">要离开这张牌桌吗？</h2><p id="leaveExplanation">牌友们还在等你。</p>
-    <div class="modal-actions"><button class="button button-outline" data-command="closeDialog">继续打牌</button><button class="button button-gold" data-command="confirmLeave">离开牌桌</button></div>
+    <h2 id="leaveTitle">离开牌桌？</h2><p id="leaveExplanation">牌友们还在等你。</p>
+    <div class="modal-actions"><button class="button button-outline" data-command="closeDialog">继续打牌</button><button class="button button-gold" data-command="confirmLeave">离开</button></div>
   </dialog>
   <div id="toast" class="game-toast" role="status"></div>
   <div id="liveAnnouncements" class="sr-only" role="status" aria-live="polite"></div>

@@ -194,13 +194,12 @@ function renderRecords(): void {
   text('totalGames', stats.games); text('totalWins', stats.wins);
   text('winRate', stats.games ? `${Math.round(stats.wins / stats.games * 100)}%` : '—');
   text('recordSource', state.user && state.stats ? '账号同步' : storageAvailable ? '本机记录' : '当前页面');
-  text('bestCaption', `${state.mode === 'daily' ? '每日挑战' : '自由探索'} · 最佳用时`);
+  text('bestCaption', '最佳用时');
   for (const [difficulty, id] of [['easy', 'bestEasy'], ['normal', 'bestNormal'], ['hard', 'bestHard']] as const) {
     const best = Math.min(stats.bestTimes[state.mode][difficulty] ?? Infinity, book.bestTimes[state.mode][difficulty] ?? Infinity);
     text(id, Number.isFinite(best) ? formatTime(best) : '—');
   }
   element('recordLogin').hidden = Boolean(state.user);
-  element('recordAccountNote').hidden = !state.user;
 }
 
 function updateLayout(): void {
@@ -293,18 +292,14 @@ function renderControls(): void {
   element('readyOverlay').hidden = Boolean(session);
   element('pauseOverlay').hidden = !session?.paused;
   element('resultButton').hidden = !session?.result;
-  text('toolHint', matchMedia('(pointer: coarse)').matches ? state.tool === 'flag' ? '轻点格子即可插旗' : '长按也能插旗' : '按 F 切换工具');
 }
 
 function render(): void {
   const session = state.session;
   const config = DIFFICULTIES[state.difficulty];
-  document.title = `扫雷 · ${config.title}${state.mode === 'daily' ? ' · 每日挑战' : ''}`;
-  text('readyTitle', `从${config.title}出发。`);
-  text('readyCopy', state.mode === 'daily' ? '相同雷区，相同起点。出发就开始计时。' : '不用赶路，第一步一定安全。');
+  document.title = `扫雷 · ${config.label}${state.mode === 'daily' ? ' · 每日挑战' : ''}`;
   text('flagsRemaining', config.mines - (session?.state.flagsUsed ?? 0));
   text('moveCount', session?.state.moves ?? 0);
-  text('clockCaption', session?.paused && state.mode === 'classic' ? '已暂停计时' : state.mode === 'daily' ? '挑战用时' : '探索用时');
   const safeCount = config.rows * config.cols - config.mines;
   const revealed = session?.state.revealedSafe ?? 0;
   const progress = Math.round(revealed / safeCount * 100);
@@ -313,7 +308,6 @@ function render(): void {
   element('dailyStrip').hidden = state.mode !== 'daily';
   text('dailyStripText', `${displayDate(session?.date ?? state.date)} · 固定中心起点`);
   text('dailyDate', `${displayDate(state.date)} · 每日换新`);
-  text('pauseCopy', state.mode === 'daily' ? '每日挑战继续计时，准备好就出发。' : '喝口水，计时已暂停。');
   renderControls(); renderBoard(); renderRecords(); updateClock();
 }
 
@@ -330,8 +324,8 @@ function openResult(): void {
   const config = DIFFICULTIES[result.difficulty];
   element('resultDialog').classList.toggle('lost', !result.won);
   element('resultEmblem').innerHTML = icon(result.won ? 'leaf' : 'compass');
-  text('resultTitle', result.won ? '这一片，安全了。' : '下一次，会更顺利。');
-  text('resultCopy', `${config.title} · ${result.mode === 'daily' ? `${displayDate(result.date || state.date)}的每日挑战` : '自由探索'}${result.won ? '，每一步都算数。' : '，把这次的线索带到下一局。'}`);
+  text('resultTitle', result.won ? '成功' : '触雷');
+  text('resultCopy', `${config.label}${result.mode === 'daily' ? ` · ${displayDate(result.date || state.date)}` : ''}`);
   text('resultTime', formatTime(result.durationMs)); text('resultMoves', result.moves);
   text('resultProgress', `${Math.round(result.revealedSafe / result.safeCells * 100)}%`);
   element('resultScore').innerHTML = `${result.score}<small>分</small>`;
@@ -347,7 +341,7 @@ function applySession(session: SessionView | null, options: { message?: string; 
   clockBase = session?.elapsedMs ?? 0; clockAnchor = performance.now();
   if (session?.result && recordLocal(session.result)) bestResults.add(session.result.id);
   render();
-  const message = options.message ?? (!session ? '选好难度，来一场小小的探险。' : session.paused ? '喝口水，林地会等你回来。' : session.state.status === 'won' ? '所有安全格都已探索完，这一片林地安全了。' : session.state.status === 'lost' ? '看看误标的旗帜与地雷，把线索留给下一次。' : !session.state.firstRevealDone ? '点任意一格开始探索，首次点击周围都安全。' : session.mode === 'daily' ? '顺着固定起点的线索，挑战今天这片林地。' : '顺着数字找线索，慢慢探索。');
+  const message = options.message ?? (!session ? '' : session.paused ? '已暂停' : session.state.status === 'won' ? '成功！' : session.state.status === 'lost' ? '触雷' : '');
   text('statusText', message);
   if (options.message) announce(options.message);
   if (session?.result && options.showResult && announcedResult !== session.id) {
@@ -424,7 +418,7 @@ function chooseSpec(difficulty: Difficulty, mode: GameMode, startImmediately = f
   state.difficulty = difficulty; state.mode = mode;
   hiddenSessionId = current?.id ?? hiddenSessionId;
   state.session = null; clockBase = 0; queue.length = 0;
-  render(); text('statusText', '选好难度，来一场小小的探险。');
+  render(); text('statusText', '');
   if (startImmediately) void startGame({ difficulty, mode });
 }
 

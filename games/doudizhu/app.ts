@@ -296,7 +296,6 @@ function setDifficulty(level: Difficulty) {
     button.setAttribute('aria-checked', String(chosen));
     button.tabIndex = chosen ? 0 : -1;
   });
-  $('difficultyNote').textContent = DIFFICULTIES[level].description;
 }
 
 function render({ dealing = false, drawn = [], action = null }: {dealing?: boolean; drawn?: CardId[]; action?: GameEvent | null} = {}) {
@@ -350,7 +349,7 @@ function renderWaiting() {
   }).join('');
   const mine = room!.players[me!.seat];
   const blocked = room!.players.some(player => player && !player.isBot && (!player.ready || !player.connected));
-  $('waitingPanel').innerHTML = `<p class="eyebrow">A GOOD NIGHT STARTS WITH GOOD COMPANY</p><h2>牌友，正在就位。</h2><p class="waiting-subtitle">房间 <b>${room!.code}</b> · 发给朋友，一起过招</p><div class="waiting-seats">${seats}</div><div class="room-settings"><div class="room-level-options"><span>人机难度</span>${Object.entries(DIFFICULTIES).map(([level, value]) => `<button data-command="roomLevel" data-level="${level}" class="${room!.difficulty === level ? 'selected' : ''}" aria-pressed="${room!.difficulty === level}" ${!host ? 'disabled' : ''}>${value.name}</button>`).join('')}</div><label class="auto-fill-label"><input type="checkbox" id="autoFill" ${room!.autoFill ? 'checked' : ''} ${!host ? 'disabled' : ''}>空位自动补人机</label></div><div class="waiting-actions"><button class="button button-outline" data-command="invite">${icon('copy')}复制邀请链接</button>${host ? `<button class="button button-gold" data-command="start" ${blocked || busy || !online ? 'disabled' : ''}>${icon('cards')}开始牌局</button>` : `<button class="button ${mine!.ready ? 'button-outline' : 'button-gold'}" data-command="ready" ${busy || !online ? 'disabled' : ''}>${mine!.ready ? '取消准备' : '准备好了'}</button>`}</div><p class="waiting-note">${host ? blocked ? '等牌友准备好，就能开局。' : room!.autoFill && room!.players.some(player => !player) ? '一个人也能开局，空座会由同难度人机补上。' : '朋友到齐了，就开一桌好牌。' : mine!.ready ? '你已经准备好，等房主开桌。' : '点「准备好了」，让房主知道你已就位。'}</p>`;
+  $('waitingPanel').innerHTML = `<h2>等待开始</h2><p class="waiting-subtitle">房间 <b>${room!.code}</b></p><div class="waiting-seats">${seats}</div><div class="room-settings"><div class="room-level-options"><span>人机难度</span>${Object.entries(DIFFICULTIES).map(([level, value]) => `<button data-command="roomLevel" data-level="${level}" class="${room!.difficulty === level ? 'selected' : ''}" aria-pressed="${room!.difficulty === level}" ${!host ? 'disabled' : ''}>${value.name}</button>`).join('')}</div><label class="auto-fill-label"><input type="checkbox" id="autoFill" ${room!.autoFill ? 'checked' : ''} ${!host ? 'disabled' : ''}>空位自动补人机</label></div><div class="waiting-actions"><button class="button button-outline" data-command="invite">${icon('copy')}复制邀请链接</button>${host ? `<button class="button button-gold" data-command="start" ${blocked || busy || !online ? 'disabled' : ''}>${icon('cards')}开始牌局</button>` : `<button class="button ${mine!.ready ? 'button-outline' : 'button-gold'}" data-command="ready" ${busy || !online ? 'disabled' : ''}>${mine!.ready ? '取消准备' : '准备好了'}</button>`}</div>`;
 }
 
 function relativeSeat(position: string) { return position === 'self' ? me!.seat : position === 'right' ? (me!.seat + 1) % 3 : (me!.seat + 2) % 3; }
@@ -605,7 +604,7 @@ function renderRecorder() {
   if (!game) return;
   const seen = new Set([...game!.hand, ...game!.playedCards.flat()]);
   const counts = rankGroups(DECK.filter(id => !seen.has(id)));
-  $('recorderPanel').innerHTML = `<div class="recorder-head"><span>场外余牌</span><button data-command="recorder" aria-label="收起记牌器">×</button></div><div class="recorder-ranks">${Array.from({ length: 15 }, (_, index) => 17 - index).map(rank => `<span class="recorder-rank ${!counts.has(rank) ? 'exhausted' : ''}"><b class="${rank >= 16 ? 'king-label' : ''}">${RANK_LABELS[rank] || rank}</b><small>${counts.get(rank)?.length || 0}</small></span>`).join('')}</div><p>只统计你手牌与已出牌以外的牌。<br>不显示对手手牌，靠记忆和判断赢下这一局。</p>`;
+  $('recorderPanel').innerHTML = `<div class="recorder-head"><span>场外余牌</span><button data-command="recorder" aria-label="收起记牌器">×</button></div><div class="recorder-ranks">${Array.from({ length: 15 }, (_, index) => 17 - index).map(rank => `<span class="recorder-rank ${!counts.has(rank) ? 'exhausted' : ''}"><b class="${rank >= 16 ? 'king-label' : ''}">${RANK_LABELS[rank] || rank}</b><small>${counts.get(rank)?.length || 0}</small></span>`).join('')}</div>`;
 }
 
 function renderResult() {
@@ -615,7 +614,7 @@ function renderResult() {
   const host = room!.hostId === me!.id;
   $('resultDialog').classList.toggle('lost', !won);
   const rows = room!.players.map((player, seat) => `<div class="result-player"><img src="assets/${player!.avatar}.webp" alt=""><span class="result-player-name"><b>${escapeHtml(player!.nickname)}${seat === me!.seat ? ' · 你' : ''}</b><small>${seat === game!.landlordSeat ? '地主' : '农民'}${game!.scores![seat] > 0 ? ' · 胜利' : ''}</small></span>${player!.rematchReady && !player!.isBot ? '<span class="result-ready">已准备</span>' : ''}<span class="result-score ${game!.scores![seat] > 0 ? 'won' : ''}">${game!.scores![seat] > 0 ? '+' : ''}${game!.scores![seat]}</span></div>`).join('');
-  $('resultDialog').innerHTML = `<button class="modal-close" data-command="closeDialog" aria-label="收起结算">×</button><div class="result-seal">${icon(won ? 'crown' : 'cards')}</div><p class="eyebrow">${won ? 'A HAND WELL PLAYED' : 'THE NEXT HAND IS YOURS'}</p><h2>${game!.winnerSide === 'landlord' ? '地主胜利' : '农民胜利'}</h2><p class="result-summary">${won ? '这局拿下了。' : '再来一局，好牌在下一手。'}底分 ${game!.highestBid} × 倍数 ${game!.multiplier}${game!.spring ? '<span class="spring-tag">春天 ×2</span>' : ''}</p><div class="result-players">${rows}</div><div class="result-actions"><button class="button button-gold" data-command="rematch" ${room!.players[me!.seat]!.rematchReady || !online ? 'disabled' : ''}>${room!.players[me!.seat]!.rematchReady ? '等牌友准备…' : '再来一局'}</button><button class="button button-outline" data-command="${host ? 'lobby' : 'leave'}">${host ? '回到房间' : '离开牌桌'}</button></div><details class="remaining-hands" ${detailsOpen ? 'open' : ''}><summary>看看大家最后的手牌</summary>${room!.players.map((player, seat) => `<p><b>${escapeHtml(player!.nickname)}</b>　${game!.revealedHands![seat].length ? game!.revealedHands![seat].map(id => { const card = cardInfo(id); return `${card!.suit === 'joker' ? '' : card!.symbol}${card!.label}`; }).join('　') : '已全部出完'}</p>`).join('')}</details><div class="result-footer"><span>第 ${room!.round} 局 · 房间 ${room!.code}</span><button data-command="rules">积分怎么算？</button></div>`;
+  $('resultDialog').innerHTML = `<button class="modal-close" data-command="closeDialog" aria-label="收起结算">×</button><div class="result-seal">${icon(won ? 'crown' : 'cards')}</div><h2>${game!.winnerSide === 'landlord' ? '地主胜利' : '农民胜利'}</h2><p class="result-summary">底分 ${game!.highestBid} × 倍数 ${game!.multiplier}${game!.spring ? '<span class="spring-tag">春天 ×2</span>' : ''}</p><div class="result-players">${rows}</div><div class="result-actions"><button class="button button-gold" data-command="rematch" ${room!.players[me!.seat]!.rematchReady || !online ? 'disabled' : ''}>${room!.players[me!.seat]!.rematchReady ? '等牌友准备…' : '再来一局'}</button><button class="button button-outline" data-command="${host ? 'lobby' : 'leave'}">${host ? '回到房间' : '离开牌桌'}</button></div><details class="remaining-hands" ${detailsOpen ? 'open' : ''}><summary>剩余手牌</summary>${room!.players.map((player, seat) => `<p><b>${escapeHtml(player!.nickname)}</b>　${game!.revealedHands![seat].length ? game!.revealedHands![seat].map(id => { const card = cardInfo(id); return `${card!.suit === 'joker' ? '' : card!.symbol}${card!.label}`; }).join('　') : '已全部出完'}</p>`).join('')}</details><div class="result-footer"><span>第 ${room!.round} 局 · 房间 ${room!.code}</span><button data-command="rules">积分规则</button></div>`;
 }
 
 function captureOrigins(action: Extract<GameEvent, {type: "play"}>, incomingMe: {id: string; seat: number}) {
@@ -918,8 +917,8 @@ $('reactionMenu').innerHTML = reactionEntries.map(([key, symbol, label]) => `<bu
 window.accountUI?.onChange(user => {
   const previous = account;
   account = user;
-  if (user) { $('nickname').value = user.nickname; $('nickname').readOnly = true; $('identityTag').textContent = '战绩会保存'; }
-  else { $('nickname').readOnly = false; $('identityTag').textContent = '随时开玩'; }
+  if (user) { $('nickname').value = user.nickname; $('nickname').readOnly = true; }
+  else { $('nickname').readOnly = false; }
   if (user && user.id !== previous?.id) {
     // 重新握手读取新 Cookie，用当前标签页 token 接回同一张牌桌。
     const previousSocket = ws;

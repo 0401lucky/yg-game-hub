@@ -46,6 +46,7 @@ test('斗地主好友房：设置、准备、叫分、私有手牌、表情和�
     await expect.poll(() => hostTable.state?.room.players[1]?.ready).toBe(true);
     await page.locator('[data-command="start"]').click();
     await expect.poll(() => hostTable.state?.game?.phase).toBe('bidding');
+    await expect.poll(() => guestTable.state?.game?.phase).toBe('bidding');
     expect(hostTable.state!.game!.hand).toHaveLength(17);
     expect(guestTable.state!.game!.hand).toHaveLength(17);
     expect(hostTable.state!.game!.hand).not.toEqual(guestTable.state!.game!.hand);

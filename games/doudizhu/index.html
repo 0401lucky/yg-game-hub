@@ -31,36 +31,42 @@
     <div class="landing-grid">
       <section class="landing-content" aria-labelledby="welcomeTitle">
         <div class="intro">
+          <p class="eyebrow"><span class="tiny-star" aria-hidden="true">♠</span> 午夜牌桌</p>
           <h1 id="welcomeTitle">开一桌。<br><span>好牌，慢慢打。</span></h1>
+          <p class="intro-copy">一人练手，或邀好友一起入座。</p>
         </div>
 
         <section class="play-panel" aria-label="开始一局斗地主">
           <div class="nickname-field">
             <img src="assets/queen.webp" alt="" class="nickname-avatar" width="44" height="44">
-            <label for="nickname"><input id="nickname" autocomplete="nickname" maxlength="16" placeholder="你的昵称" aria-label="你的昵称"></label>
+            <label for="nickname"><span>牌桌昵称</span><input id="nickname" autocomplete="nickname" maxlength="16" placeholder="今晚的牌友" aria-label="你的昵称"></label>
+            <span class="guest-tag">免登录可玩</span>
           </div>
 
-          <div class="difficulty-grid" id="difficultyPicker" role="radiogroup" aria-label="人机难度">
-            <button class="difficulty-option" data-level="easy" role="radio" aria-checked="false"><span class="difficulty-icon" data-icon="leaf"></span><b>简单</b></button>
-            <button class="difficulty-option selected" data-level="hard" role="radio" aria-checked="true"><span class="difficulty-icon" data-icon="crown"></span><b>困难</b></button>
-            <button class="difficulty-option hell-option" data-level="hell" role="radio" aria-checked="false"><span class="difficulty-icon" data-icon="flame"></span><b>地狱</b></button>
+          <div class="difficulty-heading"><span id="difficultyLabel">人机难度</span><span class="difficulty-caption">选个合适的对手</span></div>
+          <div class="difficulty-grid" id="difficultyPicker" role="radiogroup" aria-labelledby="difficultyLabel">
+            <button class="difficulty-option" data-level="easy" role="radio" aria-checked="false"><span class="difficulty-icon" data-icon="leaf"></span><b>简单</b><small>温柔陪练</small></button>
+            <button class="difficulty-option selected" data-level="hard" role="radio" aria-checked="true"><span class="difficulty-icon" data-icon="crown"></span><b>困难</b><small>认真过招</small></button>
+            <button class="difficulty-option hell-option" data-level="hell" role="radio" aria-checked="false"><span class="difficulty-icon" data-icon="flame"></span><b>地狱</b><small>步步紧逼</small></button>
           </div>
           <div class="start-buttons">
-            <button id="soloButton" class="button button-gold" data-command="solo"><span data-icon="cards"></span>单人练习<span class="button-arrow">↗</span></button>
-            <button id="createButton" class="button button-outline" data-command="create">创建好友房<span data-icon="arrow"></span></button>
+            <button id="soloButton" class="button button-gold" data-command="solo"><span class="start-icon" data-icon="cards"></span><span class="button-copy"><strong>开始游戏</strong><small>单人练习 · 两位人机陪练</small></span><span class="button-arrow" data-icon="arrow"></span></button>
+            <button id="createButton" class="button button-outline" data-command="create"><span data-icon="user"></span>创建好友房<span class="button-arrow" data-icon="arrow"></span></button>
           </div>
           <form class="join-form" id="joinForm">
-            <div class="join-input-wrap"><input id="roomCodeInput" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" placeholder="输入房间码加入" aria-label="六位房间码" required><button type="submit" aria-label="加入好友房间">入座 <span data-icon="arrow"></span></button></div>
+            <label for="roomCodeInput">已有房间码？</label>
+            <div class="join-input-wrap"><input id="roomCodeInput" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" placeholder="输入 6 位房间码" aria-label="六位房间码" required><button type="submit" aria-label="加入好友房间">加入房间 <span data-icon="arrow"></span></button></div>
           </form>
         </section>
       </section>
 
       <figure class="hero-art">
         <img src="assets/lounge-hero.webp" alt="奶油色的黑桃 A、狐狸 Joker 和红桃 Q，铺在深绿的午夜牌桌上" fetchpriority="high" width="1536" height="1024">
+        <div class="hero-art-top" aria-hidden="true"><span>♠ ♥ ♣ ♦</span></div>
         <figcaption><span class="hero-caption-line"></span><span>一副好牌，一晚好时光。</span></figcaption>
       </figure>
     </div>
-    <footer class="landing-footer"><button data-command="rules">玩法说明 <span>↗</span></button></footer>
+    <footer class="landing-footer"><a href="../../">← 游戏大厅</a><button data-command="rules">玩法说明 <span>↗</span></button></footer>
   </main>
 
   <main id="tableView" class="table-view" hidden aria-label="斗地主牌桌">

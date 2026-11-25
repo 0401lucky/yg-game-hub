@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fbf8f3">
+    <title>房间列表 · 游戏大厅</title>
+    <link rel="stylesheet" href="/web/css/operations.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+</head>
+<body>
+    <div class="hub-wrap ops-wrap">
+        <nav class="ops-nav" aria-label="站点导航">
+            <a class="ops-back" href="/">← 游戏大厅</a>
+            <div><a href="/rooms.html" aria-current="page">房间列表</a><a href="/admin">运营面板 ↗</a></div>
+        </nav>
+        <header class="ops-heading">
+            <p class="ops-eyebrow">找一间房，和朋友一起玩</p>
+            <h1 class="hub-title">房间列表<span class="hub-dot">.</span></h1>
+            <p class="hub-subtitle">飞行棋、斗地主的公开房间都在这里。挑一间加入，或看看朋友的对局。</p>
+        </header>
+        <main>
+            <section class="ops-metrics public-metrics" aria-label="公开房间概况">
+                <div><span>公开房间</span><b id="publicRoomCount">—</b></div>
+                <div><span>可以加入</span><b id="joinableRoomCount">—</b></div>
+                <div><span>正在对局</span><b id="playingRoomCount">—</b></div>
+                <div class="ops-refresh-state"><span class="ops-live" id="connectionStatus" role="status">正在连接…</span><small id="lastUpdated">每 5 秒自动更新</small></div>
+            </section>
+            <section class="ops-section" aria-labelledby="roomListTitle">
+                <div class="ops-section-heading"><h2 id="roomListTitle">现在的房间 <span id="roomCount" class="ops-count">0</span></h2>
+                    <div class="ops-refresh-controls"><label class="ops-check"><input type="checkbox" id="autoRefresh" checked>自动刷新</label><button class="ops-button" id="refreshButton" type="button">刷新</button></div>
+                </div>
+                <div class="room-filters">
+                    <label>游戏<select id="roomGame"><option value="">全部游戏</option><option value="flight">飞行棋</option><option value="doudizhu">斗地主</option></select></label>
+                    <label>房间状态<select id="roomState"><option value="">全部状态</option><option value="joinable">可以加入</option><option value="waiting">等待开局</option><option value="playing">正在对局</option></select></label>
+                    <label class="room-search">搜索<input id="roomSearch" type="search" placeholder="房间码、房名或玩家昵称" autocomplete="off" maxlength="80"></label>
+                </div>
+                <p class="ops-feedback" id="opsFeedback" role="status" hidden></p>
+                <div class="room-grid" id="roomsGrid" aria-live="polite" aria-busy="true"><div class="ops-empty"><p>正在寻找房间…</p></div></div>
+            </section>
+            <aside class="rooms-note">私密房间通过朋友分享的房间码加入。想一个人玩？<a href="/games/minesweeper/">去林间扫雷 →</a></aside>
+        </main>
+        <footer class="hub-foot"><span>© 2026 · Made with ♥ by lucky</span><a href="/">回到游戏大厅</a></footer>
+    </div>
+    <script type="module" src="/web/js/rooms.ts"></script>
+</body>
+</html>

@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { AccountSocket } from '../../../backend/gameModule.ts';
 import type { AccountMatch } from '../../shared/protocol.ts';
+import type { DailyStats } from '../../../backend/dailyStats.ts';
 import type * as Engine from '../engine.ts';
 import type * as Bot from '../bot.ts';
 import type { Difficulty, GameState, PlayerInfo, Action, ActionSource, RoomInfo } from '../types.ts';
@@ -9,7 +10,7 @@ import { serverProtocol } from '../protocol.ts';
 import type { ClientMessage, ClientPayloads, Request, ServerMessage } from '../protocol.ts';
 interface AccountIdentity { id: number; nickname: string }
 interface AuthAdapter { userFromCookieHeader?(cookie: string): AccountIdentity | null | undefined; recordMatch?(match: AccountMatch): unknown }
-interface ServiceOptions { auth?: AuthAdapter; sanitizeText?: (input: string) => string; turnMs?: number; bidMs?: number; botDelayMs?: number; tickMs?: number; disconnectGraceMs?: number }
+interface ServiceOptions { auth?: AuthAdapter; sanitizeText?: (input: string) => string; stats?: DailyStats; turnMs?: number; bidMs?: number; botDelayMs?: number; tickMs?: number; disconnectGraceMs?: number }
 export interface RoomPlayer extends PlayerInfo { userId?: number | null; disconnectedAt?: number | null; abandoned: boolean; lastReaction?: number }
 export interface Session { token: string; id: string; userId: number | null; nickname: string; ws: AccountSocket | null; roomCode: string | null; lastSeen: number; createRequests: Map<string, {at: number; code: string}> }
 export interface DoudizhuRoom { code: string; hostId: string; players: (RoomPlayer | null)[]; difficulty: Difficulty; autoFill: boolean; game: GameState | null; round: number; revision: number; createdAt: number; touchedAt: number; deadline: number | null; botDue: number | null; recorded: boolean; startedAt?: number }
@@ -33,9 +34,10 @@ class DoudizhuService {
   declare bot: typeof Bot;
   declare timer: ReturnType<typeof setInterval>;
   declare lastCleanup: number;
+  declare stats: DailyStats | undefined;
 
-  constructor({ auth = {}, sanitizeText = text => text, turnMs = 30000, bidMs = 15000, botDelayMs = 900, tickMs = 200, disconnectGraceMs = 2500 }: ServiceOptions = {}) {
-    Object.assign(this, { auth, sanitizeText, turnMs, bidMs, botDelayMs, disconnectGraceMs });
+  constructor({ auth = {}, sanitizeText = text => text, stats, turnMs = 30000, bidMs = 15000, botDelayMs = 900, tickMs = 200, disconnectGraceMs = 2500 }: ServiceOptions = {}) {
+    Object.assign(this, { auth, sanitizeText, stats, turnMs, bidMs, botDelayMs, disconnectGraceMs });
     this.rooms = new Map();
     this.sessions = new Map();
     this.ready = Promise.all([
@@ -132,6 +134,7 @@ class DoudizhuService {
       session.ws.close(4001, 'Opened in another connection');
     }
     session.ws = ws;
+    this.stats?.recordPlayerConnected(session.id);
     session.lastSeen = Date.now();
     if (account) { session.userId = account.id; session.nickname = this.nickname(account.nickname); }
     const room = this.rooms.get(session.roomCode!);
@@ -317,6 +320,7 @@ class DoudizhuService {
       createdAt: Date.now(), touchedAt: Date.now(), deadline: null, botDue: null, recorded: false
     };
     this.rooms.set(room.code, room);
+    this.stats?.recordRoomCreated();
     session.roomCode = room.code;
     if (typeof requestId === 'string' && requestId.length <= 100) {
       for (const [key, entry] of session.createRequests) if (Date.now() - entry.at > 60000) session.createRequests.delete(key);
@@ -370,6 +374,7 @@ class DoudizhuService {
     room.round++;
     room.recorded = false;
     room.startedAt = Date.now();
+    this.stats?.recordGameStarted();
     const firstBidder = rematch ? (room.round - 1) % 3 : crypto.randomInt(0, 3);
     room.game = this.engine.createGame({ seed: crypto.randomBytes(4).readUInt32LE(), firstBidder });
     for (const player of room.players as RoomPlayer[]) { player.rematchReady = player.isBot; if (player.autoReason !== 'manual') { player.auto = player.isBot; player.autoReason = null; } }
@@ -394,6 +399,7 @@ class DoudizhuService {
     this.advanceClock(room, room.game!.lastAction.type === 'redeal');
     if (room.game!.phase === 'ended' && !room.recorded) {
       room.recorded = true;
+      this.stats?.recordGameFinished();
       const winnerColors = room.game!.winnerSide === 'landlord'
         ? [room.game!.landlordSeat!] : [0, 1, 2].filter(index => index !== room.game!.landlordSeat);
       this.auth.recordMatch?.({
@@ -466,6 +472,13 @@ class DoudizhuService {
     }
     if (now - this.lastCleanup < 60000) return;
     this.lastCleanup = now;
+    this.cleanup();
+  }
+
+  cleanup() {
+    const now = Date.now();
+    const beforeRooms = this.rooms.size;
+    const beforeSessions = this.sessions.size;
     for (const [code, room] of this.rooms) {
       if (!room.players.some(item => item && !item.isBot && item.connected) && now - room.touchedAt > 15 * 60000) {
         this.rooms.delete(code);
@@ -473,6 +486,7 @@ class DoudizhuService {
       }
     }
     for (const [token, session] of this.sessions) if (!session.ws && !session.roomCode && now - session.lastSeen > 24 * 60 * 60000) this.sessions.delete(token);
+    return { rooms: beforeRooms - this.rooms.size, sessions: beforeSessions - this.sessions.size, connections: 0 };
   }
 
   close() {

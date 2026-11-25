@@ -12,6 +12,7 @@ services:
       NODE_ENV: production
       COOKIE_SECURE: "1"
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET 未设置}
+      ADMIN_KEY: ${ADMIN_KEY:-}
     logging:
       driver: json-file
       options:

@@ -12,7 +12,7 @@ const bannedWords = fs.existsSync(dictionaryFile)
   : [];
 const gameIds = fs.readdirSync(gamesDir, { withFileTypes: true })
   .filter(entry => entry.isDirectory() && entry.name !== 'shared').map(entry => entry.name);
-const inputs = [path.join(root, 'index.html'), ...gameIds.flatMap(id =>
+const inputs = [path.join(root, 'index.html'), path.join(root, 'rooms.html'), ...gameIds.flatMap(id =>
   fs.readdirSync(path.join(gamesDir, id)).filter(file => file.endsWith('.html')).map(file => path.join(gamesDir, id, file)))];
 
 interface StaticAsset { file: string; name: string }

@@ -130,7 +130,7 @@ test('扫雷 HTTP：游客 Cookie、首击保护、幂等操作、陈旧版本�
 
 test('所有构建页面、Hash 静态引用、游戏注册表和旧路径兼容', async () => {
   assert(fs.existsSync('dist/index.html'), '先运行 npm run build');
-  const pages = ['/', '/games/flight/', '/games/doudizhu/', '/games/minesweeper/',
+  const pages = ['/', '/rooms.html', '/games/flight/', '/games/doudizhu/', '/games/minesweeper/',
     '/games/flight/game.html', '/games/flight/spectate.html', '/games/flight/replay.html', '/games/flight/stats.html', '/games/flight/admin.html'];
   const resources = new Set<string>();
   for (const page of pages) {

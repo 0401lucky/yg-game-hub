@@ -7,6 +7,7 @@ import { getDefaultNickname } from './server/roomHelpers.ts';
 import { handleConnection } from './server/connections.ts';
 import { registerHttp, cleanupOrphanedResources } from './server/http.ts';
 import { dropAuthoritySession, authoritySessions, startTurnWatchdog } from './server/authorityRuntime.ts';
+import { getOverview } from './server/overview.ts';
 
 export function createGameModule(context: GameContext): GameModule<FlightClientMessage, FlightServerMessage> {
   configureRuntime(context);
@@ -19,6 +20,7 @@ export function createGameModule(context: GameContext): GameModule<FlightClientM
     fallbackWebSocket: true,
     protocol: flightServerProtocol,
     registerHttp,
+    getOverview,
     handleConnection,
     start() { watchdog = startTurnWatchdog(); },
     cleanup: cleanupOrphanedResources,

@@ -37,11 +37,11 @@ export function removeTestDirectory(directory: string): void {
 }
 
 /** Each HTTP suite gets its own Node process, port, session secret and SQLite. */
-export async function startHub() {
+export async function startHub(options: { adminKey?: string } = {}) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yg-ts-test-'));
   const child = fork(new URL('../../tools/test-server.ts', import.meta.url), [], {
     execPath: process.execPath,
-    env: { ...process.env, PORT: '0', YG_TEST_DATA_DIR: dataDir, SESSION_SECRET: 'isolated-typescript-tests' },
+    env: { ...process.env, PORT: '0', YG_TEST_DATA_DIR: dataDir, SESSION_SECRET: 'isolated-typescript-tests', YG_TEST_ADMIN_KEY: options.adminKey ?? 'isolated-admin-key-24' },
     stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true,
   });
   let logs = '';

@@ -140,20 +140,24 @@ class DailyStats {
 
   /* 最近若干天，最新在前；今天这一行用内存里的实时值 */
   history(days = 7) {
-    const keys = Object.keys(this.days).filter((key) => key !== this.date).sort().slice(-(days - 1));
-    const rows = keys.map((key) => {
+    this.ensureToday();
+    const count = Math.min(90, Math.max(1, Math.trunc(days) || 7));
+    return Array.from({ length: count }, (_, index) => {
+      const date = new Date();
+      date.setHours(12, 0, 0, 0);
+      date.setDate(date.getDate() - index);
+      const key = dayKey(date);
+      if (key === this.date) return this.toJSON();
       const row = this.days[key];
       return {
         date: key,
-        gamesPlayed: row.gamesPlayed || 0,
-        gamesFinished: row.gamesFinished || 0,
-        peakOnline: row.peakOnline || 0,
-        roomsCreated: row.roomsCreated || 0,
-        uniquePlayers: Array.isArray(row.uniquePlayers) ? row.uniquePlayers.length : (row.uniquePlayers || 0)
+        gamesPlayed: row?.gamesPlayed || 0,
+        gamesFinished: row?.gamesFinished || 0,
+        peakOnline: row?.peakOnline || 0,
+        roomsCreated: row?.roomsCreated || 0,
+        uniquePlayers: Array.isArray(row?.uniquePlayers) ? row.uniquePlayers.length : (Number(row?.uniquePlayers) || 0)
       };
     });
-    rows.push(this.toJSON());
-    return rows.reverse();
   }
 
   recordGameStarted() {

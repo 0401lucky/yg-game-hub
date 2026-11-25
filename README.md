@@ -119,6 +119,36 @@ match_players(id, match_id, user_id, player_id, nickname, color, is_winner)
 
 ---
 
+## 房间列表与运营面板
+
+大厅页底部的「房间列表」打开 `/rooms.html`，汇总飞行棋与斗地主的公开房间，可按游戏、状态、房间码或昵称筛选，支持加入、飞行棋观战与复制邀请。私密、已结算和待清理房间不进入公开列表。
+
+「运营面板」打开 `/admin`，使用**独立管理密钥**，不依赖玩家账号。部署环境或本地 `backend/.env` 设置：
+
+```dotenv
+ADMIN_KEY=你的独立随机管理密钥
+```
+
+建议使用至少 32 字符的随机串。未配置时管理入口关闭；配置或更换后重启后端生效。密钥只通过本站 POST 请求验证，服务端下发 HttpOnly、SameSite=Strict 的独立 Cookie，会话最长 8 小时，退出或后端重启即失效。HTTPS 部署设置 `COOKIE_SECURE=1`。每个客户端一分钟最多输错 5 次，超过后暂时限制登录。
+
+运营面板显示三款游戏概况、公开与私密房间、在线联机玩家、今日统计与最近七个自然日的走势，并可确认后清理失效资源。斗地主、扫雷从本次更新起纳入每日统计，历史记录保留已有口径。扫雷显示保存的单人进度与最近 5 分钟访问过的未暂停对局，不计入联机在线人数。
+
+| 方法 | 路径 | 访问范围 |
+|---|---|---|
+| GET | `/api/hub/status` | 公开的大厅人数与游戏概况 |
+| GET | `/api/hub/rooms` | 公开房间摘要，不含聊天、游戏内部状态或身份令牌 |
+| GET | `/api/admin/session` | 查询管理入口是否启用、当前管理会话 |
+| POST | `/api/admin/login` | `{key}` 验证独立管理密钥 |
+| POST | `/api/admin/logout` | 注销并撤销当前管理会话 |
+| GET | `/api/admin/overview` | 管理会话验证后读取完整运营概况 |
+| POST | `/api/admin/cleanup` | 管理会话验证后清理失效资源 |
+
+原飞行棋运营接口 `/api/rooms`、`/api/stats`、`/api/sessions`、`/api/online-users`、`/api/daily-stats`、`/api/daily-history`、`/api/cleanup` 同样需要管理会话；公开的游戏与回放接口继续供游戏页面使用。
+
+Docker Compose 使用 `deploy/docker-compose.yml` 的 `ADMIN_KEY` 环境映射。在服务器 `/opt/yg-games/.env` 配置密钥后，重新创建容器以加载环境变量；仅 `docker compose restart` 不会更新容器环境。
+
+---
+
 ## 新增一个游戏
 
 1. 把 HTML 与原生 TS 前端放进 `games/<id>/`，相对 TS 导入显式保留 `.ts` 后缀。引擎与协议保持平台无关。

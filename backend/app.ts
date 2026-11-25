@@ -7,6 +7,8 @@ import { createTextSanitizer } from './contentModeration.ts';
 import { loadGameModules } from './gameRegistry.ts';
 import { mountStatic } from './static.ts';
 import { mountTelemetry } from './telemetry.ts';
+import { mountAdminAuth } from './adminAuth.ts';
+import { mountOperations } from './operations.ts';
 import type { AccountSocket, GameContext } from './gameModule.ts';
 import { errorMessage } from '../games/shared/errors.ts';
 
@@ -16,14 +18,17 @@ export async function createApplication() {
   const server = http.createServer(app);
   const wss = new WebSocketServer({ server });
   app.use(express.json());
+  mountAdminAuth(app);
   auth.mountAuthRoutes(app);
   mountTelemetry(app);
   const stats = new DailyStats();
   const context: GameContext = { auth, stats, sanitizeText: createTextSanitizer() };
   const games = await loadGameModules(context);
   for (const game of games) game.registerHttp(app);
+  mountOperations(app, games, stats);
   mountStatic(app);
   wss.on('connection', (socket, request) => {
+    stats.recordConnectionCount([...wss.clients].filter(client => client.readyState === 1).length);
     const ws = socket as AccountSocket;
     try {
       const account = auth.userFromCookieHeader(request.headers.cookie);

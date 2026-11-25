@@ -1,111 +1,96 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>飞行棋管理面板</title>
+    <meta name="theme-color" content="#fbf8f3">
+    <title>运营面板 · 游戏大厅</title>
+    <link rel="stylesheet" href="/web/css/operations.css">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
 </head>
-
 <body>
-    <div class="admin-container">
-        <header class="admin-header">
-            <h1><a class="admin-home-link" href="index.html" title="返回主站">飞行棋管理面板</a></h1>
-                    <!-- 今日统计 -->
-        <div class="daily-stats" id="dailyStats">
-            <span class="daily-stats-label">今日</span>
-            <span class="daily-stat" id="statGames"><i class="legend-dot legend-1"></i>对局 <b id="statGamesValue">0</b></span>
-            <span class="daily-stat-divider">｜</span>
-            <span class="daily-stat" id="statFinished"><i class="legend-dot legend-2"></i>完赛 <b id="statFinishedValue">0</b></span>
-            <span class="daily-stat-divider">｜</span>
-            <span class="daily-stat" id="statPlayers"><i class="legend-dot legend-3"></i>玩家 <b id="statPlayersValue">0</b></span>
-            <span class="daily-stat-divider">｜</span>
-            <span class="daily-stat" id="statPeak"><i class="legend-dot legend-4"></i>峰值 <b id="statPeakValue">0</b></span>
-        </div>
-            <!-- 近 7 天走势：小图，居中 -->
-            <div class="history-chart">
-                <canvas id="historyChart"></canvas>
-            </div>
-            <div class="status-bar">
-                <div class="status-item">
-                    <span class="status-label">服务器状态</span>
-                    <span class="status-value online" id="serverStatus">在线</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">自动刷新</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="autoRefresh" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
+    <div class="hub-wrap ops-wrap">
+        <nav class="ops-nav" aria-label="站点导航">
+            <a class="ops-back" href="/">← 游戏大厅</a>
+            <div><a href="/rooms.html">房间列表</a><button class="ops-button subtle" id="adminLogout" type="button" hidden>退出管理</button></div>
+        </nav>
+        <header class="ops-heading">
+            <p class="ops-eyebrow">游戏大厅 · 站点管理</p>
+            <h1 class="hub-title">运营面板<span class="hub-dot">.</span></h1>
+            <p class="hub-subtitle">房间、玩家和今日数据，一眼看清。</p>
         </header>
-
-        <!-- 统计概览 -->
-        <section class="stats-overview">
-            <div class="stat-card">
-                <div class="stat-content">
-                    <div class="stat-label">房间总数</div>
-                    <div class="stat-value" id="totalRooms">0</div>
-                    <div class="stat-detail">
-                        <span>等待: <span id="waitingRooms">0</span></span>
-                        <span>游戏中: <span id="playingRooms">0</span></span>
-                        <span>已结算: <span id="finishedRooms">0</span></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-content">
-                    <div class="stat-label">游戏会话</div>
-                    <div class="stat-value" id="totalSessions">0</div>
-                    <div class="stat-detail">活跃游戏数量</div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-content">
-                    <div class="stat-label">玩家连接</div>
-                    <div class="stat-value" id="totalPlayers">0</div>
-                    <div class="stat-detail">
-                        <span>房间中: <span id="playersInRooms">0</span></span>
-                        <span>游戏中: <span id="playersInSessions">0</span></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-content">
-                    <div class="stat-label">等待清理</div>
-                    <div class="stat-value" id="totalTimers">0</div>
-                    <div class="stat-detail">
-                        <span>房间: <span id="roomTimers">0</span></span>
-                        <span>断线: <span id="disconnectTimers">0</span></span>
-                    </div>
-                </div>
-            </div>
+        <section class="admin-gate" id="adminGate" aria-labelledby="adminGateTitle">
+            <div class="gate-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v3"/></svg></div>
+            <h2 id="adminGateTitle">凭管理密钥进入</h2>
+            <p>这里是站点管理员的工作台。请输入为本站配置的管理密钥，验证后查看运营数据。</p>
+            <form id="adminLoginForm">
+                <label for="adminKey">管理密钥</label>
+                <div class="admin-key-field"><input id="adminKey" type="password" required maxlength="1024" autocomplete="current-password" placeholder="输入管理密钥" aria-describedby="adminGateMessage"><button class="admin-key-toggle" id="adminKeyToggle" type="button" aria-label="显示管理密钥" aria-pressed="false">显示</button></div>
+                <button class="ops-button primary" id="adminLogin" type="submit" disabled>验证并进入 →</button>
+            </form>
+            <p class="ops-feedback" id="adminGateMessage" role="status">正在检查管理入口…</p>
+            <p class="gate-note">管理密钥独立于玩家账号。管理会话有效期为 8 小时。</p>
         </section>
-
-        <!-- 在线用户展示 -->
-        <section class="data-section">
-            <h2 class="section-title">实时在线用户</h2>
-            <div class="online-users-container" id="onlineUsersContainer">
-                <div class="empty-message">正在加载在线用户...</div>
+        <main id="adminContent" hidden>
+            <div class="admin-topline">
+                <span class="ops-live" id="connectionStatus" role="status">正在加载数据…</span>
+                <div class="ops-refresh-controls"><span class="ops-muted" id="adminExpiry"></span><label class="ops-check"><input type="checkbox" id="autoRefresh" checked>自动刷新</label><button class="ops-button" id="refreshButton" type="button">刷新</button></div>
             </div>
-        </section>
-
-        <!-- 房间与会话列表 -->
-        <section class="data-section">
-            <h2 class="section-title">房间列表</h2>
-            <div class="room-grid" id="combinedTableBody">
-                <p class="empty-message">暂无数据</p>
-            </div>
-        </section>
-
+            <p class="ops-feedback" id="opsFeedback" role="status" hidden></p>
+            <section class="ops-metrics" aria-label="实时概况">
+                <div><span>在线联机玩家</span><b data-metric id="totalOnline">—</b></div>
+                <div><span>进行中对局</span><b data-metric id="totalActiveGames">—</b></div>
+                <div><span>房间总数</span><b data-metric id="totalRooms">—</b></div>
+                <div><span>待清理资源</span><b data-metric id="pendingCleanup">—</b></div>
+            </section>
+            <section class="ops-section" aria-labelledby="dailyTitle">
+                <div class="ops-section-heading"><h2 id="dailyTitle">今天 <span class="ops-muted" id="statsDate"></span></h2><span class="ops-muted" id="lastUpdated"></span></div>
+                <div class="admin-daily">
+                    <div><span>今日开局</span><b data-metric id="dailyPlayed">—</b></div>
+                    <div><span>今日完赛</span><b data-metric id="dailyFinished">—</b></div>
+                    <div><span>独立玩家</span><b data-metric id="dailyPlayers">—</b></div>
+                    <div><span>在线峰值</span><b data-metric id="dailyPeak">—</b></div>
+                    <div><span>新建房间</span><b data-metric id="dailyRooms">—</b></div>
+                </div>
+            </section>
+            <section class="ops-section" aria-labelledby="gamesTitle">
+                <div class="ops-section-heading"><h2 id="gamesTitle">各游戏概况</h2></div>
+                <div class="admin-game-grid" id="adminGames"></div>
+            </section>
+            <section class="ops-section" aria-labelledby="historyTitle">
+                <div class="ops-section-heading"><h2 id="historyTitle">最近 7 天</h2><span class="ops-muted">开局与完赛走势</span></div>
+                <div class="admin-chart-panel">
+                    <div class="chart-legend"><span>开局</span><span>完赛</span></div>
+                    <svg class="admin-chart" id="historyChart" viewBox="0 0 680 210" role="img" aria-label="最近七天的开局和完赛数量"></svg>
+                    <details class="history-details"><summary>查看每日数据</summary><div class="ops-table-wrap"><table class="ops-table"><thead><tr><th scope="col">日期</th><th scope="col">开局</th><th scope="col">完赛</th><th scope="col">独立玩家</th><th scope="col">在线峰值</th><th scope="col">新建房间</th></tr></thead><tbody id="historyRows"></tbody></table></div></details>
+                </div>
+            </section>
+            <section class="ops-section" aria-labelledby="roomListTitle">
+                <div class="ops-section-heading"><h2 id="roomListTitle">全部房间 <span class="ops-count" id="roomCount">0</span></h2><span class="ops-muted">包含私密、已结算与待清理房间</span></div>
+                <div class="room-filters">
+                    <label>游戏<select id="roomGame"><option value="">全部游戏</option><option value="flight">飞行棋</option><option value="doudizhu">斗地主</option></select></label>
+                    <label>房间状态<select id="roomState"><option value="">全部状态</option><option value="joinable">可以加入</option><option value="waiting">等待开局</option><option value="playing">正在对局</option><option value="finished">已结算</option><option value="cleanup">待清理</option></select></label>
+                    <label class="room-search">搜索<input id="roomSearch" type="search" placeholder="房间码、房名或玩家昵称" maxlength="80" autocomplete="off"></label>
+                </div>
+                <div class="room-grid" id="roomsGrid" aria-live="polite"></div>
+            </section>
+            <section class="ops-section" aria-labelledby="usersTitle">
+                <div class="ops-section-heading"><h2 id="usersTitle">在线联机玩家 <span class="ops-count" id="onlineUserCount">0</span></h2></div>
+                <div class="admin-users" id="onlineUsers"></div>
+            </section>
+            <aside class="rooms-note">在线人数按联机连接统计；扫雷活跃对局统计最近 5 分钟有访问的未暂停进度。</aside>
+            <section class="admin-system" aria-label="服务信息">
+                <div class="admin-system-info"><span id="systemUptime"></span><span id="systemMemory"></span><span>自动刷新间隔 5 秒</span></div>
+                <button class="ops-button subtle" id="cleanupButton" type="button">清理失效资源</button>
+            </section>
+        </main>
+        <footer class="hub-foot"><span>© 2026 · Made with ♥ by lucky</span><a href="/">回到游戏大厅</a></footer>
     </div>
-
+    <dialog class="ops-dialog" id="cleanupDialog" aria-labelledby="cleanupTitle">
+        <h2 id="cleanupTitle">清理失效资源</h2>
+        <p>清理孤立会话、超时空房间和已断开的连接。仍有玩家参与的对局会继续保留。</p>
+        <div class="ops-dialog-actions"><button class="ops-button" id="cancelCleanup" type="button">取消</button><button class="ops-button primary" id="confirmCleanup" type="button">开始清理</button></div>
+    </dialog>
     <script type="module" src="./js/admin.ts"></script>
 </body>
-
 </html>

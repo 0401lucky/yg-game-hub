@@ -1,8 +1,8 @@
 import { test, expect, capture, register } from './fixtures.ts';
 
 const pages = [
-  ['/', '游戏大厅'], ['/games/flight/', '飞行棋'], ['/games/doudizhu/', '斗地主'], ['/games/minesweeper/', '扫雷'],
-  ['/games/flight/stats.html', '统计数据'], ['/games/flight/admin.html', '管理面板'],
+  ['/', '游戏大厅'], ['/rooms.html', '房间列表'], ['/games/flight/', '飞行棋'], ['/games/doudizhu/', '斗地主'], ['/games/minesweeper/', '扫雷'],
+  ['/games/flight/stats.html', '统计数据'], ['/games/flight/admin.html', '运营面板'],
 ] as const;
 for (const [path, title] of pages) {
   test(`页面资源与响应式布局 ${path}`, async ({ page }, info) => {

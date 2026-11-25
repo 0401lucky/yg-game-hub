@@ -1,7 +1,5 @@
 import type { SiteGame, SiteRegistry, PublicUser } from '../../games/shared/protocol.ts';
-import type { FlightRoomInfo } from '../../games/flight/types.ts';
-import type { RoomSummary as CardRoomSummary } from '../../games/doudizhu/types.ts';
-interface FlightRoomsResponse { totalRooms: number; rooms: FlightRoomInfo[] }
+import type { HubStatus } from '../operationsProtocol.ts';
 /**
  * 游戏门户：读取 games.json 渲染游戏卡片，并展示在线概况。
  * 新增游戏只需：1) 把游戏放进 games/<id>/；2) 在 games.json 里加一条。
@@ -96,21 +94,11 @@ interface FlightRoomsResponse { totalRooms: number; rooms: FlightRoomInfo[] }
   }
 
   function updateStatus() {
-    Promise.all([
-      fetch('/api/rooms', { credentials: 'same-origin' }).then(function (r) { return r.json() as Promise<FlightRoomsResponse>; }),
-      fetch('/api/doudizhu/rooms', { credentials: 'same-origin' }).then(function (r) { return r.json() as Promise<{rooms: CardRoomSummary[]}>; }).catch(function () { return { rooms: [] }; })
-    ])
-      .then(function (sources) {
-        var data = sources[0];
-        var cardRooms = sources[1].rooms || [];
-        var rooms = data.totalRooms || 0;
-        var players = 0;
-        (data.rooms || []).forEach(function (room) {
-          players += (room.players || []).filter(function (p) { return p.isConnected; }).length;
-        });
-        cardRooms.forEach(function (room) { players += room.humans || 0; });
-        setPill('hubRooms', rooms + cardRooms.length);
-        setPill('hubPlayers', players);
+    fetch('/api/hub/status', { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (response) { if (!response.ok) throw new Error('Status unavailable'); return response.json() as Promise<HubStatus>; })
+      .then(function (data) {
+        setPill('hubRooms', data.totals.rooms);
+        setPill('hubPlayers', data.totals.onlinePlayers);
       })
       .catch(function () { /* 在线概况拿不到不影响玩 */ });
   }

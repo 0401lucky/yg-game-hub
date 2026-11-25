@@ -2,6 +2,10 @@
 
 ## 查询接口
 
+以下原飞行棋运营接口均需要管理会话：先通过 `POST /api/admin/login` 提交 `{ "key": "管理密钥" }`，后续请求携带服务端返回的 `yg_admin_session` Cookie。未验证返回 401；未配置 `ADMIN_KEY` 返回 503。`POST /api/admin/logout` 撤销当前会话。完整配置与多游戏接口见 [README](../README.md#房间列表与运营面板)。
+
+玩家使用公开的 `GET /api/hub/rooms` 查看房间摘要，或直接打开 `/rooms.html`；`GET /api/hub/status` 提供大厅在线概况。公开列表不包含私密房间、聊天记录、游戏内部状态或身份令牌。
+
 服务器启动后，提供以下 HTTP GET 接口用于查询服务器状态（部署后建议通过反向代理映射为 https://your-domain/api/...）。
 
 ### 1. 查询所有房间信息
@@ -280,7 +284,8 @@
 
 部署成功后，访问地址：
 - **游戏主页**：`https://chess.example.com/`
-- **管理面板**：`https://chess.example.com/admin.html`
+- **房间列表**：`https://chess.example.com/rooms.html`
+- **管理面板**：`https://chess.example.com/admin`
 - **API 接口**：
   - 房间列表：`https://chess.example.com/api/rooms`
   - 游戏会话：`https://chess.example.com/api/sessions`

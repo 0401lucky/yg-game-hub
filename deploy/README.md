@@ -22,7 +22,7 @@ Cloudflare 边缘 ──tunnel yg-games──▶ 127.0.0.1:3007 (容器 3001)
 | 路径 | 说明 |
 |---|---|
 | `/opt/yg-games/docker-compose.yml` | 容器编排（端口 127.0.0.1:3007） |
-| `/opt/yg-games/.env` | `SESSION_SECRET`，换掉等于所有人登出 |
+| `/opt/yg-games/.env` | `SESSION_SECRET` 为玩家会话签名密钥；`ADMIN_KEY` 为独立运营管理密钥 |
 | `/opt/yg-games/data/` | 账号库 `app.db`、每日统计 `stats.json`，**备份这里** |
 | `/etc/cloudflared-games/config.yml` | 隧道配置，只映射 `games.lucky0625.us.ci` |
 | `/etc/systemd/system/cloudflared-games.service` | 隧道服务，独立于机器上其它 cloudflared |
@@ -39,6 +39,8 @@ systemctl status cloudflared-games
 ```
 
 ## 常用诊断
+
+运营入口 `/admin` 需要单独配置 `ADMIN_KEY`，未配置时保持关闭。将随机密钥加入 `/opt/yg-games/.env`，并确保 compose 使用仓库中的 `ADMIN_KEY: ${ADMIN_KEY:-}` 环境映射；执行 `docker compose up -d` 重新创建容器后生效。更换管理密钥不影响玩家账号，会撤销现有管理会话。不要把实际密钥提交到仓库。
 
 ```bash
 # 容器内服务本身是否活着

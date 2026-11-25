@@ -8,6 +8,8 @@ const ownedData = !process.env.YG_TEST_DATA_DIR;
 const dataDir = path.resolve(process.env.YG_TEST_DATA_DIR || fs.mkdtempSync(path.join(os.tmpdir(), 'yg-ts-test-')));
 process.env.GAME_DATA_DIR = dataDir;
 process.env.SESSION_SECRET = 'isolated-typescript-tests';
+process.env.ADMIN_KEY = process.env.YG_TEST_ADMIN_KEY ?? 'isolated-admin-key-24';
+process.env.COOKIE_SECURE = '0';
 // Load config only after the isolated data directory is selected.
 const { createApplication } = await import('../backend/app.ts');
 const application = await createApplication();

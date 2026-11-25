@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import express from 'express';
 import type { Express, Request, RequestHandler } from 'express';
 import type { AuthAdapter, AccountUser, GameState, GameResult, SessionView, StartInput, StepInput, StatusResponse, SessionResponse, GameStats } from '../types.ts';
+import type { DailyStats } from '../../../backend/dailyStats.ts';
 
 type EngineModule = typeof import('../engine.ts');
 interface Session {
@@ -13,6 +14,7 @@ interface Session {
 interface ServiceOptions {
   auth?: AuthAdapter | null; now?: () => number; seedFactory?: () => string;
   maxSessions?: number; ttl?: number;
+  stats?: DailyStats;
 }
 interface Identity { owner: string; guestOwner: string; user: AccountUser | null; }
 interface MineRequest extends Request { mineIdentity: Identity; }
@@ -44,12 +46,14 @@ class MinesweeperService {
   readonly starts: Map<string, { count: number; resetAt: number }>;
   readonly ready: Promise<void>;
   engine!: EngineModule;
-  constructor({ auth = null, now = Date.now, seedFactory = () => crypto.randomBytes(24).toString('hex'), maxSessions = 1000, ttl = SESSION_TTL }: ServiceOptions = {}) {
+  readonly dailyStats: DailyStats | undefined;
+  constructor({ auth = null, now = Date.now, seedFactory = () => crypto.randomBytes(24).toString('hex'), maxSessions = 1000, ttl = SESSION_TTL, stats }: ServiceOptions = {}) {
     this.auth = auth;
     this.now = now;
     this.seedFactory = seedFactory;
     this.maxSessions = maxSessions;
     this.ttl = ttl;
+    this.dailyStats = stats;
     this.sessions = new Map<string, Session>();
     this.starts = new Map<string, { count: number; resetAt: number }>();
     this.ready = import('../engine.ts').then(engine => { this.engine = engine; });
@@ -141,6 +145,8 @@ class MinesweeperService {
       touchedAt: now, requests: new Set<string>(), result: null,
     };
     this.sessions.set(owner, session);
+    this.dailyStats?.recordPlayerConnected(`mine_${crypto.createHash('sha256').update(owner).digest('hex')}`);
+    if (session.startedAt !== null) this.dailyStats?.recordGameStarted();
     if (state.status !== 'playing') this.settle(session);
     return { session: this.view(session)! };
   }
@@ -170,7 +176,10 @@ class MinesweeperService {
       const resolved = this.engine.applyAction(session.state, action);
       if (!resolved.ok) throw new GameError(400, resolved.message);
       session.state = resolved.state;
-      if (session.startedAt === null && session.state.firstRevealDone) session.startedAt = now;
+      if (session.startedAt === null && session.state.firstRevealDone) {
+        session.startedAt = now;
+        this.dailyStats?.recordGameStarted();
+      }
       message = resolved.message;
       if (session.state.status !== 'playing') this.settle(session);
     }
@@ -184,6 +193,7 @@ class MinesweeperService {
   settle(session: Session): void {
     if (session.result) return;
     session.endedAt = this.now();
+    this.dailyStats?.recordGameFinished();
     const durationMs = this.elapsed(session);
     const won = session.state.status === 'won';
     const best = this.stats(session.user?.id)?.bestTimes?.[session.mode]?.[session.state.difficulty];

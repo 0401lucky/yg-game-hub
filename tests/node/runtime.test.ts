@@ -60,9 +60,9 @@ test('生产运行目录：仅 backend、dist 和收集的游戏源码，无 web
     child!.once('error', reject);
   });
   const base = `http://127.0.0.1:${port}`;
-  for (const route of ['/', '/rooms.html', '/admin', '/api/hub/rooms']) assert.equal((await fetch(base + route)).status, 200, route);
+  for (const route of ['/', '/rooms.html', '/admin', '/api/hub/rooms', '/games/watermelon/', '/games/watermelon/assets/fruits/watermelon.webp', '/api/watermelon/status']) assert.equal((await fetch(base + route)).status, 200, route);
   const status = await fetch(base + '/api/hub/status').then(response => response.json()) as { games: { id: string }[] };
-  assert.deepEqual(status.games.map(game => game.id).sort(), ['doudizhu', 'flight', 'minesweeper']);
+  assert.deepEqual(status.games.map(game => game.id).sort(), ['doudizhu', 'flight', 'minesweeper', 'watermelon']);
   assert.equal((await fetch(base + '/api/admin/overview')).status, 401);
   const login = await fetch(base + '/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'runtime-test-admin-key' }) });
   assert.equal(login.status, 200);

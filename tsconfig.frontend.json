@@ -6,5 +6,5 @@
     "module": "ESNext",
     "moduleResolution": "Bundler"
   },
-  "include": ["web/**/*.ts", "games/flight/js/**/*.ts", "games/flight/assets/**/*.ts", "games/doudizhu/app.ts", "games/minesweeper/app.ts"]
+  "include": ["web/**/*.ts", "games/flight/js/**/*.ts", "games/flight/assets/**/*.ts", "games/doudizhu/app.ts", "games/minesweeper/app.ts", "games/watermelon/app.ts"]
 }

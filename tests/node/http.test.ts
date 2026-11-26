@@ -69,7 +69,7 @@ test('账号 HTTP 与 WS：注册、签名 Cookie、登录退出、错误密码�
   assert.equal((await c.call<AuthResponse>('/api/auth/me')).data.user, null);
 });
 
-test('SQLite 战绩与 HTTP 汇总：飞行棋、农民共同获胜、扫雷最佳用时及原表结构', async () => {
+test('SQLite 战绩与 HTTP 汇总：飞行棋、农民共同获胜、扫雷最佳用时及账号表兼容', async () => {
   const c = client();
   const user = (await c.call<AuthResponse>('/api/auth/register', {
     username: `stats_${Date.now().toString(36)}`, password: 'stats-password-24', nickname: '战绩号',
@@ -100,7 +100,7 @@ test('SQLite 战绩与 HTTP 汇总：飞行棋、农民共同获胜、扫雷最�
   assert.equal(mines.stats?.bestTimes.classic.easy, 45000);
   const db = new DatabaseSync(path.join(hub.dataDir, 'app.db'), { readOnly: true });
   try {
-    assert.deepEqual(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(row => row.name), ['match_players', 'matches', 'users']);
+    assert.deepEqual(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(row => row.name), ['match_players', 'matches', 'users', 'watermelon_results']);
     assert.deepEqual(db.prepare('PRAGMA table_info(users)').all().map(row => row.name), ['id', 'username', 'pass_hash', 'nickname', 'created_at', 'last_login_at']);
   } finally { db.close(); }
 });

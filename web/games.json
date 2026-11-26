@@ -60,6 +60,20 @@
       "tags": ["经典推理", "每日挑战", "随时开玩"]
     },
     {
+      "id": "watermelon",
+      "name": "合成大西瓜",
+      "subtitle": "软软果园",
+      "emoji": "🍉",
+      "cover": "/games/watermelon/assets/cover.webp",
+      "accent": "#a6d8b7",
+      "accentSoft": "#eef5e9",
+      "desc": "软乎乎的水果，碰在一起就长大。瞄准落点、连锁合成，收获你的大西瓜。支持自由练习、撤回与账号战绩挑战。",
+      "path": "/games/watermelon/",
+      "status": "online",
+      "players": "1 人",
+      "tags": ["软体合成", "随时开玩", "战绩挑战"]
+    },
+    {
       "id": "uno",
       "name": "UNO",
       "subtitle": "待开发",

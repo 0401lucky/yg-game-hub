@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fbf8f3">
+  <meta name="description" content="软乎乎的水果，碰在一起就长大。自由练习、软体合成与账号战绩挑战，收获你的大西瓜。">
+  <title>合成大西瓜 · 软软果园</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/web/css/account.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./"><img src="favicon.svg" width="42" height="42" alt=""><strong>合成大西瓜</strong></a>
+    <nav class="header-nav" aria-label="游戏导航">
+      <a class="hub-link" href="../../"><span data-icon="back"></span><span>游戏大厅</span></a>
+      <button class="icon-button" id="soundButton" data-command="sound" aria-label="开启音效" title="开启音效"><span data-icon="soundOff"></span></button>
+      <button class="rules-link" data-command="rules"><span data-icon="book"></span><span>玩法</span></button>
+    </nav>
+  </header>
+  <main class="page-wrap">
+    <section class="intro" aria-labelledby="pageTitle"><h1 id="pageTitle">把小水果，<span>合成大西瓜。</span></h1></section>
+    <div class="connection-banner" id="connectionBanner" role="alert" hidden><span id="connectionText"></span><button data-command="retry">重新连接 ↗</button></div>
+    <div class="main-grid">
+      <section class="game-card" aria-label="合成大西瓜游戏">
+        <div class="card-topline">
+          <div class="mode-picker" role="group" aria-label="游戏模式"><button data-mode="practice" class="selected" aria-pressed="true">自由练习</button><button data-mode="challenge" aria-pressed="false">战绩挑战</button></div>
+          <span class="sync-status" id="syncStatus" role="status">本机游戏</span>
+        </div>
+        <div class="game-hud">
+          <div class="score"><span>本局得分</span><b id="score">0</b></div>
+          <div class="best-score"><span>最佳</span><b id="bestScore">0</b></div>
+          <div class="next-fruit"><span>下一颗</span><div><img id="nextFruit" src="assets/fruits/grape.webp" alt="葡萄" width="38" height="38"><b id="nextName">葡萄</b></div></div>
+          <button class="icon-button" id="pauseButton" data-command="pause" aria-label="暂停" title="暂停" disabled><span data-icon="pause"></span></button>
+          <button class="icon-button" id="restartButton" data-command="restart" aria-label="重新开始" title="重新开始"><span data-icon="restart"></span></button>
+        </div>
+        <div class="canvas-stage" id="canvasStage">
+          <canvas id="gameCanvas" width="360" height="550" tabindex="0" role="application" aria-label="合成西瓜果盘。左右方向键瞄准，空格投放，P 暂停，练习中 U 撤回。" aria-describedby="canvasHelp"></canvas>
+          <span class="combo" id="combo" aria-live="polite" hidden></span>
+          <div class="board-overlay ready-overlay" id="readyOverlay"><h2>软软果园</h2><button class="button button-primary" id="startButton" data-command="start">开始合成 <span data-icon="arrow"></span></button></div>
+          <div class="board-overlay pause-overlay" id="pauseOverlay" hidden><h2>这局还在</h2><button class="button button-primary" data-command="resume">继续合成 <span data-icon="play"></span></button></div>
+          <div class="board-overlay over-overlay" id="overOverlay" hidden><h2>本局收获</h2><button class="button button-primary" id="resultButton" data-command="result">查看收获 <span data-icon="arrow"></span></button></div>
+        </div>
+        <div class="tool-row"><span id="canvasHelp">轻点投放，拖动瞄准</span><span class="moves"><b id="moveCount">0</b> 颗</span><button class="undo-button" id="undoButton" data-command="undo" disabled><span data-icon="undo"></span>撤回</button><button class="finish-button" id="finishButton" data-command="finish" disabled>收下本局 ↗</button></div>
+        <div class="fruit-track"><span class="track-label">合成之路</span><ol class="fruit-chain" id="fruitChain" aria-label="水果合成顺序"></ol></div>
+      </section>
+      <aside class="sidebar" aria-label="果园与战绩">
+        <figure class="orchard-art"><img src="assets/cover.webp" alt="玻璃盘中的软体西瓜、桃子和橘子" width="1440" height="960" fetchpriority="high"></figure>
+        <section class="record-card">
+          <div class="record-heading"><h2>我的收获</h2><span id="recordSource">本机记录</span></div>
+          <div class="record-summary"><div><b id="recordBest">0</b><span>最高分</span></div><div><b id="recordGames">0</b><span>局数</span></div><div><b id="recordWins">0</b><span>西瓜</span></div></div>
+          <div class="highest-fruit"><img id="highestImage" src="assets/fruits/watermelon.webp" alt="" width="76" height="76"><div><span>最高合成</span><b id="highestName">等你收获</b></div></div>
+          <ul class="recent-records" id="recentRecords" aria-label="最近战绩"></ul>
+          <button class="record-login" id="recordLogin" data-command="login" hidden>登录同步战绩 ↗</button>
+        </section>
+      </aside>
+    </div>
+  </main>
+  <dialog class="modal rules-modal" id="rulesDialog" aria-labelledby="rulesTitle">
+    <button class="modal-close" data-command="closeDialog" aria-label="关闭玩法说明"><span data-icon="close"></span></button>
+    <h2 id="rulesTitle">玩法</h2>
+    <div class="rules-grid"><section><h3>碰在一起，就长大</h3><p>相同水果相碰会合成下一种水果，直到大西瓜。每次合成都能得分。</p></section><section><h3>留一点空间</h3><p>水果持续堆过红色警戒线，倒计时结束后，本局收获结算。</p></section><section><h3>轻松练习</h3><p>自由练习可以撤回上一颗水果。暂停、切到后台与刷新都会留下本机进度。</p></section><section><h3>记录挑战</h3><p>战绩挑战不能撤回，分数由服务器复算。游客也能玩；登录后，挑战成绩保存到大厅账号。</p></section></div>
+    <div class="keyboard-guide"><span><kbd>← →</kbd> 瞄准</span><span><kbd>Space</kbd> 投放</span><span><kbd>P</kbd> 暂停</span><span><kbd>U</kbd> 练习撤回</span></div>
+    <button class="button button-primary rules-done" data-command="closeDialog">知道了</button>
+  </dialog>
+  <dialog class="modal result-modal" id="resultDialog" aria-labelledby="resultTitle">
+    <button class="modal-close" data-command="closeDialog" aria-label="关闭收获"><span data-icon="close"></span></button>
+    <img class="result-fruit" id="resultFruit" src="assets/fruits/watermelon.webp" alt="" width="112" height="112">
+    <span class="personal-best" id="personalBest" hidden>新的最高分</span><h2 id="resultTitle">本局收获</h2>
+    <div class="result-score"><b id="resultScore">0</b><span>分</span></div>
+    <div class="result-metrics"><div><span>最高合成</span><b id="resultHighest">—</b></div><div><span>投放</span><b id="resultMoves">0 颗</b></div><div><span>用时</span><b id="resultTime">00:00</b></div></div>
+    <p class="result-saved" id="resultSaved" role="status"></p>
+    <div class="modal-actions"><button class="button button-soft" data-command="closeDialog">看看果盘</button><button class="button button-primary" data-command="again">再来一局 <span data-icon="arrow"></span></button></div>
+  </dialog>
+  <dialog class="modal confirm-modal" id="confirmDialog" aria-labelledby="confirmTitle">
+    <button class="modal-close" data-command="closeDialog" aria-label="取消"><span data-icon="close"></span></button><h2 id="confirmTitle">重新开始？</h2><p id="confirmCopy">当前进度会被清空。</p><div class="modal-actions"><button class="button button-soft" data-command="closeDialog">取消</button><button class="button button-primary" id="confirmButton" data-command="confirm">重新开始</button></div>
+  </dialog>
+  <div class="game-toast" id="toast" role="status"></div><div class="sr-only" id="announcements" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="/web/js/account.ts"></script><script type="module" src="app.ts"></script>
+</body>
+</html>

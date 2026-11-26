@@ -47,6 +47,8 @@ export interface AccountStats {
     endedAt: string;
     isWinner: boolean;
     color: number | null;
+    score?: number;
+    highest?: number;
   }[];
 }
 

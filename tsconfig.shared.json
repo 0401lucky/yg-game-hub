@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": { "lib": ["ES2024"], "types": [] },
-  "include": ["games/shared/**/*.ts", "games/flight/protocol.ts", "games/flight/httpProtocol.ts", "games/flight/types.ts", "games/doudizhu/engine.ts", "games/doudizhu/bot.ts", "games/doudizhu/protocol.ts", "games/doudizhu/types.ts", "games/minesweeper/engine.ts", "games/minesweeper/types.ts", "games/minesweeper/protocol.ts"]
+  "include": ["games/shared/**/*.ts", "games/flight/protocol.ts", "games/flight/httpProtocol.ts", "games/flight/types.ts", "games/doudizhu/engine.ts", "games/doudizhu/bot.ts", "games/doudizhu/protocol.ts", "games/doudizhu/types.ts", "games/minesweeper/engine.ts", "games/minesweeper/types.ts", "games/minesweeper/protocol.ts", "games/watermelon/engine.ts", "games/watermelon/protocol.ts"]
 }

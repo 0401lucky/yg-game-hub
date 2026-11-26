@@ -8,6 +8,8 @@ import type { AccountMatch, AccountStats, PublicUser, PlayerId } from '../games/
 import { DATA_DIR } from './config.ts';
 import { errorMessage } from '../games/shared/errors.ts';
 import { readMinesweeperStats } from './minesweeper-stats.ts';
+import { readWatermelonStats } from './watermelon-stats.ts';
+import type { WatermelonAccountRecord, WatermelonStats } from '../games/watermelon/protocol.ts';
 import type { GameStats } from '../games/minesweeper/types.ts';
 export interface UserRow { id: number; username: string; nickname: string; pass_hash: string; created_at: string; last_login_at: string | null }
 interface TokenPayload { uid: number; exp: number }
@@ -101,6 +103,15 @@ function migrate() {
     CREATE INDEX IF NOT EXISTS idx_match_players_user ON match_players(user_id);
     CREATE INDEX IF NOT EXISTS idx_match_players_match ON match_players(match_id);
     CREATE INDEX IF NOT EXISTS idx_matches_ended ON matches(ended_at);
+
+    CREATE TABLE IF NOT EXISTS watermelon_results (
+      match_id INTEGER PRIMARY KEY REFERENCES matches(id) ON DELETE CASCADE,
+      session_id TEXT NOT NULL UNIQUE,
+      score INTEGER NOT NULL CHECK(score >= 0),
+      highest INTEGER NOT NULL CHECK(highest BETWEEN -1 AND 8),
+      moves INTEGER NOT NULL CHECK(moves >= 0),
+      game_over INTEGER NOT NULL DEFAULT 0
+    );
   `);
 
   // 兼容旧库：多游戏化之前没有 game_id 列
@@ -329,6 +340,36 @@ function recordMatch({ gameId = 'flight', roomCode, mode, players, winnerColor, 
   }
 }
 
+function recordWatermelonMatch(input: WatermelonAccountRecord): number | null {
+  if (!enabled) return null;
+  let transaction = false;
+  try {
+    const existing = db.prepare(`SELECT w.match_id FROM watermelon_results w
+      JOIN match_players mp ON mp.match_id = w.match_id WHERE w.session_id = ? AND mp.user_id = ?`).get(input.sessionId, input.userId);
+    if (existing) return Number(existing.match_id);
+    db.exec('BEGIN IMMEDIATE'); transaction = true;
+    const matchId = recordMatch({
+      gameId: 'watermelon', mode: 'challenge', durationMs: input.durationMs,
+      players: [{ userId: input.userId, playerId: `melon_${input.sessionId}`, nickname: input.nickname, color: 0 }],
+      winnerColors: input.highest === 8 ? [0] : [],
+    });
+    if (matchId === null) throw new Error('无法保存账号战绩');
+    db.prepare('INSERT INTO watermelon_results (match_id, session_id, score, highest, moves, game_over) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(matchId, input.sessionId, input.score, input.highest, input.moves, input.gameOver ? 1 : 0);
+    db.exec('COMMIT'); transaction = false;
+    return matchId;
+  } catch (err) {
+    if (transaction) db.exec('ROLLBACK');
+    console.error('[战绩] 西瓜写入失败:', errorMessage(err));
+    return null;
+  }
+}
+
+function watermelonStatsOf(userId: number): WatermelonStats | null {
+  if (!enabled) return null;
+  return readWatermelonStats(db, userId);
+}
+
 function statsOf(userId: number) : AccountStats | null {
   if (!enabled) return null;
   try {
@@ -338,8 +379,9 @@ function statsOf(userId: number) : AccountStats | null {
       .get(userId);
     const recent = db
       .prepare(
-        `SELECT m.id, m.game_id, m.room_code, m.mode, m.player_count, m.ended_at, mp.is_winner, mp.color
+        `SELECT m.id, m.game_id, m.room_code, m.mode, m.player_count, m.ended_at, mp.is_winner, mp.color, w.score, w.highest
          FROM match_players mp JOIN matches m ON m.id = mp.match_id
+         LEFT JOIN watermelon_results w ON w.match_id = m.id
          WHERE mp.user_id = ? ORDER BY m.id DESC LIMIT 10`
       )
       .all(userId);
@@ -372,6 +414,7 @@ function statsOf(userId: number) : AccountStats | null {
         endedAt: String(r.ended_at),
         isWinner: Boolean(r.is_winner),
         color: r.color as number | null,
+        ...(r.score == null ? {} : { score: Number(r.score), highest: Number(r.highest) }),
       })),
     };
   } catch (err) {
@@ -505,4 +548,4 @@ function mountAuthRoutes(app: Express) {
 
 // -------------------------- 导出 --------------------------
 
-export { publicUser, userFromCookieHeader, rememberPlayer, userIdOfPlayer, nicknameForRequest, recordMatch, statsOf, minesweeperStatsOf, mountAuthRoutes, parseCookies };
+export { publicUser, userFromCookieHeader, rememberPlayer, userIdOfPlayer, nicknameForRequest, recordMatch, recordWatermelonMatch, statsOf, minesweeperStatsOf, watermelonStatsOf, mountAuthRoutes, parseCookies };

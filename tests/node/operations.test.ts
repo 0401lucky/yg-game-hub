@@ -94,7 +94,7 @@ test('公开房间与运营汇总：多游戏、私密房间隔离、无内部�
     assert.equal((await call(hub.base, '/api/minesweeper/action', action, mineCookie)).status, 200);
     assert.equal((await call(hub.base, '/api/minesweeper/action', action, mineCookie)).status, 200);
     const overview = (await call<AdminOverview>(hub.base, '/api/admin/overview', undefined, cookie)).data;
-    assert.deepEqual(overview.games.map(game => game.id).sort(), ['doudizhu', 'flight', 'minesweeper']);
+    assert.deepEqual(overview.games.map(game => game.id).sort(), ['doudizhu', 'flight', 'minesweeper', 'watermelon']);
     assert(overview.rooms.some(room => room.code === privateRoom.code && room.isPrivate));
     assert.equal(overview.daily.gamesPlayed, before.daily.gamesPlayed + 2);
     assert(overview.daily.uniquePlayers >= 4); assert(overview.daily.peakOnline >= 3);

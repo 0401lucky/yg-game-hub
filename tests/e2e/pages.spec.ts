@@ -1,7 +1,7 @@
 import { test, expect, capture, register } from './fixtures.ts';
 
 const pages = [
-  ['/', '游戏大厅'], ['/rooms.html', '房间列表'], ['/games/flight/', '飞行棋'], ['/games/doudizhu/', '斗地主'], ['/games/minesweeper/', '扫雷'],
+  ['/', '游戏大厅'], ['/rooms.html', '房间列表'], ['/games/flight/', '飞行棋'], ['/games/doudizhu/', '斗地主'], ['/games/minesweeper/', '扫雷'], ['/games/watermelon/', '合成大西瓜'],
   ['/games/flight/stats.html', '统计数据'], ['/games/flight/admin.html', '运营面板'],
 ] as const;
 for (const [path, title] of pages) {
@@ -10,7 +10,7 @@ for (const [path, title] of pages) {
     expect(response?.status()).toBe(200);
     await expect(page).toHaveTitle(new RegExp(title));
     await page.waitForLoadState('networkidle');
-    if (path === '/') await expect(page.locator('.hub-card.live')).toHaveCount(3);
+    if (path === '/') await expect(page.locator('.hub-card.live')).toHaveCount(4);
     await capture(page, info, 'page');
   });
 }

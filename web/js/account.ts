@@ -15,7 +15,7 @@ interface AccountElements { toast: HTMLElement; chip: HTMLButtonElement; panel: 
   var els: AccountElements = {} as AccountElements;
 
   // 战绩面板上的游戏名（新增游戏时在这里加一行）。没登记的游戏 id 会原样显示
-  var GAME_NAMES: Record<string, string> = { flight: '飞行棋', doudizhu: '斗地主', minesweeper: '扫雷' };
+  var GAME_NAMES: Record<string, string> = { flight: '飞行棋', doudizhu: '斗地主', minesweeper: '扫雷', watermelon: '合成西瓜' };
 
   // ------------------------ 工具 ------------------------
 
@@ -130,9 +130,10 @@ interface AccountElements { toast: HTMLElement; chip: HTMLButtonElement; panel: 
           var mineDifficulty = ({ easy: '简单', normal: '普通', hard: '困难' } as Record<string, string>)[mineMode[1]] || '';
           label = '扫雷 · ' + (mineMode[0] === 'daily' ? '每日挑战' : '自由探索') + (mineDifficulty ? ' · ' + mineDifficulty : '');
         }
+        if (m.gameId === 'watermelon') label = '合成西瓜 · ' + (m.score ?? 0) + ' 分';
         var time = isNaN(when.getTime()) ? '' : (when.getMonth() + 1) + '/' + when.getDate();
         row.appendChild(el('span', null, label + (time ? ' · ' + time : '')));
-        row.appendChild(el('span', m.isWinner ? 'ac-win' : 'ac-lose', m.isWinner ? '胜' : '负'));
+        row.appendChild(el('span', m.isWinner ? 'ac-win' : 'ac-lose', m.gameId === 'watermelon' ? (m.isWinner ? '西瓜' : '完成') : (m.isWinner ? '胜' : '负')));
         recent.appendChild(row);
       });
     }

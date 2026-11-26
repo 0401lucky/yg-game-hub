@@ -17,7 +17,7 @@ async function login(page: Page): Promise<void> {
   await expect(page.locator('#adminLogin')).toBeEnabled();
   await page.locator('#adminKey').fill(KEY); await page.locator('#adminLogin').click();
   await expect(page.locator('#adminContent')).toBeVisible();
-  await expect(page.locator('.admin-game-card')).toHaveCount(3);
+  await expect(page.locator('.admin-game-card')).toHaveCount(4);
   await page.locator('#autoRefresh').uncheck();
 }
 
@@ -43,7 +43,7 @@ test('运营面板：错误密钥被拒绝、验证后加载、刷新保留会�
   await page.locator('#cancelCleanup').click(); await expect(page.locator('#cleanupDialog')).toBeHidden();
   await page.locator('#cleanupButton').click(); await page.locator('#confirmCleanup').click();
   await expect(page.locator('#opsFeedback')).toContainText('已清理'); await expect(page.locator('#cleanupDialog')).toBeHidden();
-  await page.reload(); await expect(page.locator('#adminContent')).toBeVisible(); await expect(page.locator('.admin-game-card')).toHaveCount(3);
+  await page.reload(); await expect(page.locator('#adminContent')).toBeVisible(); await expect(page.locator('.admin-game-card')).toHaveCount(4);
   await capture(page, info, 'operations-authenticated');
   await page.locator('#adminLogout').click(); await expect(page.locator('#adminGate')).toBeVisible();
   await expect(page.locator('#adminGateMessage')).toContainText('已退出管理');

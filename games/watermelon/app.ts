@@ -40,7 +40,7 @@ const state = {
 let runtime: WatermelonRuntime | null = null;
 let accountReady = false, endedScheduled = false, resumeOnClose = false;
 let confirmation: (() => Promise<void>) | null = null;
-let toastTimer = 0, lastPracticeTick = 0, lastPracticeMoves = -1, lastPracticePhase = '';
+let toastTimer = 0, lastPracticeTick = 0, lastPracticeMoves = -1, lastPracticePhase = '', lastRenderedScore = -1, scoreBumpTimer = 0;
 const ownerKey = () => state.user ? `account:${state.user.id}` : 'guest';
 const recordsKey = () => `yg.watermelon.records.v1:${state.mode === 'practice' ? 'practice' : ownerKey()}`;
 const text = (id: string, value: string | number) => { element(id).textContent = String(value); };
@@ -84,7 +84,9 @@ function renderRecords(): void {
   highest.src = FRUITS[Math.max(0, stats.highest >= 0 ? stats.highest : 8)].image;
   highest.style.opacity = stats.highest >= 0 ? '1' : '.5';
   const list = element('recentRecords'); list.replaceChildren();
-  for (const record of stats.recent.slice(0, 3)) {
+  const recentItems = stats.recent.slice(0, 3);
+  element('recentSection').hidden = recentItems.length === 0;
+  for (const record of recentItems) {
     const row = document.createElement('li'), name = document.createElement('span'), score = document.createElement('b'), time = document.createElement('time');
     name.textContent = fruitName(record.highest); score.textContent = `${record.score} 分`;
     const date = new Date(record.endedAt); time.dateTime = date.toISOString(); time.textContent = `${date.getMonth() + 1}/${date.getDate()}`;
@@ -93,7 +95,17 @@ function renderRecords(): void {
   element('recordLogin').hidden = state.mode !== 'challenge' || Boolean(state.user);
 }
 function renderProgress(progress: WatermelonProgress): void {
-  text('score', progress.score); text('bestScore', progress.best); text('moveCount', progress.moves);
+  const scoreNode = element('score');
+  if (lastRenderedScore >= 0 && progress.score > lastRenderedScore) {
+    scoreNode.classList.remove('bump');
+    void scoreNode.offsetWidth;
+    scoreNode.classList.add('bump');
+    window.clearTimeout(scoreBumpTimer);
+    scoreBumpTimer = window.setTimeout(() => scoreNode.classList.remove('bump'), 260);
+  }
+  lastRenderedScore = progress.score;
+  scoreNode.textContent = String(progress.score);
+  text('bestScore', progress.best); text('moveCount', progress.moves);
   const next = element<HTMLImageElement>('nextFruit');
   if (next.dataset.level !== String(progress.next)) {
     next.dataset.level = String(progress.next); next.src = FRUITS[progress.next].image; next.alt = fruitName(progress.next);
@@ -125,7 +137,9 @@ function renderProgress(progress: WatermelonProgress): void {
   document.querySelectorAll<HTMLButtonElement>('.mode-picker [data-mode]').forEach(button => {
     const selected = button.dataset.mode === state.mode; button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', String(selected)); button.disabled = state.busy;
   });
-  text('syncStatus', state.busy ? (state.settlementPending ? '正在记录' : '正在准备') : state.mode === 'practice' ? '本机游戏' : state.failed ? '等待重连' : state.result ? '本局完成' : '进度已保留');
+  const syncNode = element('syncStatus');
+  syncNode.textContent = state.busy ? (state.settlementPending ? '正在记录' : '正在准备') : state.mode === 'practice' ? '本机游戏' : state.failed ? '等待重连' : state.result ? '本局完成' : '进度已保留';
+  syncNode.dataset.state = state.failed ? 'warn' : state.busy ? 'busy' : 'ok';
 }
 function savePractice(force = false): void {
   if (!runtime || state.mode !== 'practice' || state.restoring || state.result || runtime.progress.moves === 0) return;

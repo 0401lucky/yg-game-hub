@@ -43,10 +43,11 @@
             <span class="guest-tag">免登录可玩</span>
           </div>
 
-          <div class="difficulty-heading"><span id="modeLabel">玩法模式</span><span class="difficulty-caption">选经典或炸弹满天飞</span></div>
+          <div class="difficulty-heading"><span id="modeLabel">玩法模式</span><span class="difficulty-caption">经典、癞子或每局随机词条</span></div>
           <div class="mode-grid" id="modePicker" role="radiogroup" aria-labelledby="modeLabel">
-            <button class="difficulty-option selected" data-mode="classic" role="radio" aria-checked="true"><span class="difficulty-icon" data-icon="cards"></span><b>经典模式</b><small>原汁原味标准规则</small></button>
-            <button class="difficulty-option laizi-option" data-mode="laizi" role="radio" aria-checked="false"><span class="difficulty-icon" data-icon="spark"></span><b>癞子模式</b><small>万能癞子 · 炸弹连天</small></button>
+            <button class="difficulty-option selected" data-mode="classic" role="radio" aria-checked="true"><span class="difficulty-icon" data-icon="cards"></span><b>经典</b><small>标准规则原味对决</small></button>
+            <button class="difficulty-option laizi-option" data-mode="laizi" role="radio" aria-checked="false"><span class="difficulty-icon" data-icon="spark"></span><b>癞子</b><small>万能癞子炸弹连天</small></button>
+            <button class="difficulty-option rogue-option" data-mode="roguelike" role="radio" aria-checked="false"><span class="difficulty-icon" data-icon="dice"></span><b>肉鸽词条</b><small>每局随机 2 条离谱规则</small></button>
           </div>
 
           <div class="difficulty-heading"><span id="difficultyLabel">人机难度</span><span class="difficulty-caption">选个合适的对手</span></div>
@@ -85,7 +86,9 @@
       <div class="table-vignette" aria-hidden="true"></div>
       <div class="felt-ornament felt-ornament-left" aria-hidden="true">✧</div><div class="felt-ornament felt-ornament-right" aria-hidden="true">✧</div>
 
-      <div class="game-metrics" id="gameMetrics" hidden><span>底分 <b id="baseScore">1</b></span><i>×</i><span>倍数 <b id="multiplier">1</b></span><span class="laizi-badge" id="laiziBadge" hidden></span><span class="round-number" id="roundNumber">第 1 局</span></div>
+      <div class="game-metrics" id="gameMetrics" hidden><span>底分 <b id="baseScore">1</b></span><i>×</i><span>倍数 <b id="multiplier">1</b></span><span class="laizi-badge" id="laiziBadge" hidden></span><div class="affix-bar" id="affixBar" hidden></div><span class="round-number" id="roundNumber">第 1 局</span></div>
+      <aside id="affixPopover" class="affix-popover" hidden aria-label="本局随机词条说明"></aside>
+      <div id="affixReveal" class="affix-reveal" hidden role="status" aria-live="polite"></div>
       <div class="bottom-deck" id="bottomDeck" hidden><span class="bottom-caption" id="bottomCaption">等待地主揭牌</span><div class="bottom-card-row" id="bottomCards"></div></div>
       <div id="surrenderBanner" class="surrender-banner" role="alert" hidden></div>
 
@@ -125,6 +128,7 @@
       <section><h3>轮流出牌</h3><p>按座位顺序出牌，用相同牌型、相同张数、更高点数压过上一手，也可以不出。连续两人不出，上一手的玩家重新领出；领出时不能不出。</p></section>
       <section><h3>常用牌型</h3><p>单张、对子、三张、三带一、三带一对；五张起的顺子、三对起的连对、连续两组三张起的飞机。四带二可以带一对，四带两对需两种不同点数的对子。</p></section>
       <section><h3>炸弹与癞子</h3><p>四张同点数是炸弹，双王是王炸。癞子模式每局随机指定一种点数为万能癞子（不可当王），可组成软炸弹／纯癞子炸弹；大小顺序：王炸 ＞ 纯癞子炸弹 ＞ 硬炸弹 ＞ 软炸弹。</p></section>
+      <section><h3>肉鸽随机词条</h3><p>每局发牌（含无人叫分重发）随机抽取 2 条全局规则：以下犯上（3 最大且不进顺子）、残缺之美（4 张顺子／2 连对）、明牌地主（6 张底牌且强制明牌）、炸弹过敏（出炸弹随机弃 1 张手牌）、天降癞子、心灵感应（农民互看手牌）、倍率狂飙（初始 ×2、炸弹 ×3）。</p></section>
     </div>
     <div class="rules-note">牌的大小：大王 ＞ 小王 ＞ 2 ＞ A ＞ K ＞ … ＞ 3。顺子、连对、飞机的机身不含 2 和王。飞机的单牌翅膀允许对子，不能带三张同点数，也不能使用机身点数。</div>
     <div class="scoring-strip"><span>叫分 <b>×</b> 炸弹／王炸 <b>×</b> 明牌 <b>×</b> 春天</span><small>每次炸弹／王炸翻倍，每位明牌玩家使倍率 ×2（叫分和出牌阶段均可主动明牌，人机牌极好时也会明牌）。出牌阶段仅真人可投降，双真人农民需队友确认。</small></div>

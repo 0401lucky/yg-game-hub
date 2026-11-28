@@ -17,7 +17,7 @@ export interface DoudizhuRoom { code: string; hostId: string; players: (RoomPlay
 
 
 const LEVELS = new Set(['easy', 'hard', 'hell']);
-const MODES = new Set<GameMode>(['classic', 'laizi']);
+const MODES = new Set<GameMode>(['classic', 'laizi', 'roguelike']);
 const REACTIONS = { hello: '牌友好呀', hurry: '轮到你啦', nice: '这手漂亮', thinking: '让我想想', wow: '好家伙！', gg: '打得不错' };
 const BOT_NAMES = { easy: ['小青 · 陪练', '阿金 · 陪练'], hard: ['青狐 · 棋手', '金狐 · 棋手'], hell: ['玄鸦 · 魔王', '赤狐 · 魔王'] };
 
@@ -225,7 +225,7 @@ class DoudizhuService {
         if (!host) { this.error(session.ws, 'hostOnly', '只有房主可以设置牌桌'); break; }
         if (room.game) { this.error(session.ws, 'inProgress', '下一局再调整牌桌设置'); break; }
         if (data.difficulty !== undefined && !LEVELS.has(data.difficulty)) { this.error(session.ws, 'invalidLevel', '请选择简单、困难或地狱'); break; }
-        if (data.mode !== undefined && !MODES.has(data.mode)) { this.error(session.ws, 'invalidMode', '请选择经典或癞子模式'); break; }
+        if (data.mode !== undefined && !MODES.has(data.mode)) { this.error(session.ws, 'invalidMode', '请选择经典、癞子或肉鸽模式'); break; }
         if (data.difficulty) {
           room.difficulty = data.difficulty;
           room.players = room.players.map((item, index) => item?.isBot ? this.makeBot(index, room.difficulty) : item);
@@ -327,7 +327,7 @@ class DoudizhuService {
     }
     if (session.roomCode) { this.error(session.ws, 'alreadyInRoom', '先离开当前牌桌再开新房间', requestId); return; }
     if (!LEVELS.has(data.difficulty || 'hard')) { this.error(session.ws, 'invalidLevel', '请选择简单、困难或地狱', requestId); return; }
-    if (data.mode !== undefined && !MODES.has(data.mode)) { this.error(session.ws, 'invalidMode', '请选择经典或癞子模式', requestId); return; }
+    if (data.mode !== undefined && !MODES.has(data.mode)) { this.error(session.ws, 'invalidMode', '请选择经典、癞子或肉鸽模式', requestId); return; }
     if (!session.userId) session.nickname = this.nickname(data.nickname || session.nickname);
     const difficulty = data.difficulty || 'hard';
     const mode: GameMode = data.mode || 'classic';

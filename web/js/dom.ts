@@ -295,6 +295,9 @@ export interface HtmlIds {
   "baseScore": HTMLElementTagNameMap["b"];
   "multiplier": HTMLElementTagNameMap["b"];
   "laiziBadge": HTMLElementTagNameMap["span"];
+  "affixBar": HTMLElementTagNameMap["div"];
+  "affixReveal": HTMLElementTagNameMap["div"];
+  "affixPopover": HTMLElementTagNameMap["aside"];
   "roundNumber": HTMLElementTagNameMap["span"];
   "bottomDeck": HTMLElementTagNameMap["div"];
   "bottomCaption": HTMLElementTagNameMap["span"];

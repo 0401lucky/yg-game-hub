@@ -1,14 +1,18 @@
-import type { CardId, Play, GameState, Action, BotView, Difficulty } from './types.ts';
+import type { CardId, Play, GameState, Action, BotView, Difficulty, RuleConfig } from './types.ts';
 interface Template { code: number; size: number; entries: number[][] }
 interface Planner { plays: Play[]; cost(cards: CardId[]): number }
 interface RankedPlay extends Play { score: number }
-import { DECK, rankOf, rankGroups, legalPlays, canBeat, applyAction, publicState, sortCards } from './engine.ts';
+import { DECK, rankOf, rankPower, rankGroups, legalPlays, canBeat, applyAction, publicState, sortCards, normalizeRules, stateRules, type RuleInput } from './engine.ts';
 
 export const DIFFICULTIES = {
   easy: { name: '简单', title: '温柔陪练', description: '基础叫分和顺手出牌，适合熟悉节奏。' },
   hard: { name: '困难', title: '认真过招', description: '规划拆牌，保留大牌，懂得配合农民队友。' },
   hell: { name: '地狱', title: '步步紧逼', description: '记住已出牌，推演可能的对手手牌，争夺出牌权。' }
 };
+
+function viewRules(view: Pick<BotView, 'affixes' | 'laiziRank'>): RuleConfig {
+  return stateRules({ affixes: view.affixes ?? [], laiziRank: view.laiziRank ?? null });
+}
 
 const powers = Array.from({ length: 15 }, (_, i) => 5 ** i);
 function countsOf(cards: CardId[]) {
@@ -20,8 +24,9 @@ function encode(counts: number[]) { return counts.reduce((sum, count, index) => 
 function fits(template: Template, counts: number[]) { return template.entries.every(([rank, count]) => counts[rank] >= count); }
 
 // 在点数计数上搜索拆牌，花色不影响斗地主牌型。节点预算限制服务端思考时间。
-export function handPlanner(hand: CardId[], nodeBudget = 350, laiziRank: number | null = null): Planner {
-  const plays = legalPlays(hand, null, laiziRank);
+export function handPlanner(hand: CardId[], nodeBudget = 350, rules: RuleInput = null): Planner {
+  const cfg = normalizeRules(rules);
+  const plays = legalPlays(hand, null, cfg);
   const unique: Map<number, Template> = new Map();
   for (const move of plays) {
     const counts = countsOf(move.cards);
@@ -73,20 +78,22 @@ function urgency(view: BotView) {
   return view.counts.some((count, seat) => !sameSide(seat, view.seat, view.landlordSeat) && count <= 2);
 }
 
-function handStrength(hand: CardId[], laiziRank: number | null, plannerBudget: number) {
-  const groups = rankGroups(hand);
+function handStrength(hand: CardId[], rules: RuleConfig, plannerBudget: number) {
+  const laiziRank = rules.laiziRank;
+  const groups = rankGroups(hand, rules);
   let strength = 0;
   const wildCount = laiziRank !== null ? (groups.get(laiziRank)?.length || 0) : 0;
   if (wildCount) strength += wildCount * 2.6 + (wildCount >= 3 ? 2.5 : 0);
   if (groups.has(16) && groups.has(17)) strength += 2.2;
   for (const [rank, cards] of groups) {
     if (rank === laiziRank) continue;
-    strength += cards.length * (rank === 17 ? 3.8 : rank === 16 ? 2.7 : rank === 15 ? 1.9 : rank === 14 ? 0.65 : 0);
+    const p = rankPower(rank, rules);
+    strength += cards.length * (p >= 17 ? 3.8 : p >= 16 ? 2.7 : p >= 15.5 ? 2.2 : p >= 15 ? 1.9 : p >= 14 ? 0.65 : 0);
     if (cards.length === 4) strength += 4.5;
-    if (cards.length >= 3 && rank < 14) strength += 0.7;
+    if (cards.length >= 3 && p < 14) strength += 0.7;
   }
   if (plannerBudget > 0) {
-    const planner = handPlanner(hand, plannerBudget, laiziRank);
+    const planner = handPlanner(hand, plannerBudget, rules);
     strength += Math.max(0, 7 - planner.cost(hand)) * 1.35;
   }
   return strength;
@@ -94,16 +101,17 @@ function handStrength(hand: CardId[], laiziRank: number | null, plannerBudget: n
 
 // 评估人机是否对自己的手牌过于自信，主动点击明牌。
 export function shouldBotOpenHand(view: BotView, difficulty: Difficulty, random: () => number = Math.random): boolean {
-  if (view.phase === 'ended' || view.openSeats?.[view.seat]) return false;
+  if (view.phase === 'ended' || view.openSeats?.[view.seat] || view.forcedOpenSeats?.[view.seat]) return false;
   // 叫分阶段只在刚开局未出牌时，或出牌阶段刚开始前几手时评估
   if (view.phase === 'playing' && (view.playCounts[view.seat] > 1 || view.hand.length < 10)) return false;
+  const rules = viewRules(view);
   const budget = difficulty === 'easy' ? 0 : difficulty === 'hell' ? 220 : 120;
-  const strength = handStrength(view.hand, view.laiziRank ?? null, budget);
-  const groups = rankGroups(view.hand);
+  const strength = handStrength(view.hand, rules, budget);
+  const groups = rankGroups(view.hand, rules);
   const hasRocket = groups.has(16) && groups.has(17);
-  const wilds = view.laiziRank !== null ? (groups.get(view.laiziRank)?.length || 0) : 0;
+  const wilds = rules.laiziRank !== null ? (groups.get(rules.laiziRank)?.length || 0) : 0;
   let bombs = 0;
-  for (const [rank, cards] of groups) if (rank !== view.laiziRank && cards.length === 4) bombs++;
+  for (const [rank, cards] of groups) if (rank !== rules.laiziRank && cards.length === 4) bombs++;
   if (wilds >= 4) bombs++;
   // 必须牌力极强（如王炸+大牌、多炸弹、或极少手数）才明牌
   const threshold = view.phase === 'bidding' ? 16.5 : 17.5;
@@ -114,73 +122,80 @@ export function shouldBotOpenHand(view: BotView, difficulty: Difficulty, random:
 }
 
 function bid(view: BotView, difficulty: Difficulty, random: () => number): Action {
+  const rules = viewRules(view);
   const budget = difficulty === 'easy' ? 0 : difficulty === 'hell' ? 280 : 120;
-  let strength = handStrength(view.hand, view.laiziRank ?? null, budget);
+  let strength = handStrength(view.hand, rules, budget);
+  if (rules.landlordOpen) strength += 1.1; // 明牌地主多拿底牌但要亮牌，略微鼓励评估
   if (difficulty === 'easy') strength += (random() - 0.5) * 2.5;
   const score = strength >= 13 ? 3 : strength >= 9 ? 2 : strength >= 5.5 ? 1 : 0;
   return { type: 'bid', score: score > view.highestBid ? score : 0 };
 }
 
-function scoreMove(view: BotView, move: Play, planner: Planner) {
+function scoreMove(view: BotView, move: Play, planner: Planner, rules: RuleConfig) {
   if (move.cards.length === view.hand.length) return -10000;
+  // 炸弹过敏且出完炸弹后只剩 1 张牌时，随机弃掉最后 1 张也会直接获胜！
+  if (rules.bombDiscard && move.pattern.type === 'bomb' && view.hand.length - move.cards.length === 1) return -9999;
   const left = remaining(view.hand, move);
-  const laiziRank = view.laiziRank ?? null;
+  const laiziRank = rules.laiziRank;
   let score = planner.cost(left) * 12 - move.cards.length * 0.25;
   score += move.cards.reduce((sum, id) => {
     const r = rankOf(id);
     if (laiziRank !== null && r === laiziRank) return sum + 1.8;
-    return sum + Math.max(0, r - 13) * 0.32;
+    return sum + Math.max(0, rankPower(r, rules) - 13) * 0.32;
   }, 0);
   if (['bomb', 'rocket'].includes(move.pattern.type)) {
-    const bombPenalty = move.pattern.bombKind === 'pure' ? 11 : move.pattern.bombKind === 'soft' ? 6.5 : 8;
-    score += urgency(view) ? 0 : bombPenalty;
+    let bombPenalty = move.pattern.bombKind === 'pure' ? 11 : move.pattern.bombKind === 'soft' ? 6.5 : 8;
+    if (rules.bombDiscard && move.pattern.type === 'bomb') bombPenalty -= 3;
+    score += urgency(view) ? 0 : Math.max(0, bombPenalty);
   }
-  const before = rankGroups(view.hand);
-  const after = rankGroups(left);
+  const before = rankGroups(view.hand, rules);
+  const after = rankGroups(left, rules);
   for (const [rank, cards] of before) {
     if (cards.length === 4 && after.has(rank) && after.get(rank)!.length < 4) score += 4.5;
   }
+  const movePower = rankPower(move.pattern.rank, rules);
   if (!view.trick && view.counts.some((count, seat) => count === 1 && !sameSide(seat, view.seat, view.landlordSeat))) {
-    if (move.pattern.type === 'single') score += (17 - move.pattern.rank) * 1.8;
+    if (move.pattern.type === 'single') score += (17 - movePower) * 1.8;
     else score -= 3;
   }
   // 场外同点数的大牌越少，越适合用它取得出牌权。
-  if (!view.trick && move.pattern.type === 'single' && move.pattern.rank >= 14) {
+  if (!view.trick && move.pattern.type === 'single' && movePower >= 14) {
     const known = new Set([...view.hand, ...view.playedCards.flat()]);
     for (const open of view.openHands || []) if (open) for (const id of open) known.add(id);
     const opponentOpenBigger = (view.openHands || []).some((open, seat) =>
-      open && !sameSide(seat, view.seat, view.landlordSeat) && open.some(id => rankOf(id) > move.pattern.rank)
+      open && !sameSide(seat, view.seat, view.landlordSeat) && open.some(id => rankPower(rankOf(id), rules) > movePower)
     );
-    if (!opponentOpenBigger && !DECK.some(id => !known.has(id) && rankOf(id) > move.pattern.rank)) score -= 2.5;
+    if (!opponentOpenBigger && !DECK.some(id => !known.has(id) && rankPower(rankOf(id), rules) > movePower)) score -= 2.5;
   }
   return score;
 }
 
 export function suggestedPlays(view: BotView, nodeBudget = 180) {
-  const laiziRank = view.laiziRank ?? null;
-  const planner = handPlanner(view.hand, nodeBudget, laiziRank);
-  return planner.plays.filter(move => canBeat(move.pattern, view.trick?.pattern))
-    .map(move => ({ ...move, score: scoreMove(view, move, planner) }))
-    .sort((a, b) => a.score - b.score || a.pattern.rank - b.pattern.rank);
+  const rules = viewRules(view);
+  const planner = handPlanner(view.hand, nodeBudget, rules);
+  return planner.plays.filter(move => canBeat(move.pattern, view.trick?.pattern, rules))
+    .map(move => ({ ...move, score: scoreMove(view, move, planner, rules) }))
+    .sort((a, b) => a.score - b.score || rankPower(a.pattern.rank, rules) - rankPower(b.pattern.rank, rules));
 }
 
 function chooseEasy(view: BotView, random: () => number): Action {
-  const moves = legalPlays(view.hand, view.trick?.pattern, view.laiziRank ?? null);
-  const finish = moves.find(move => move.cards.length === view.hand.length);
+  const rules = viewRules(view);
+  const moves = legalPlays(view.hand, view.trick?.pattern, rules);
+  const finish = moves.find(move => move.cards.length === view.hand.length || (rules.bombDiscard && move.pattern.type === 'bomb' && view.hand.length - move.cards.length === 1));
   if (finish) return { type: 'play', cards: finish.cards };
   if (!moves.length || (view.trick && !urgency(view) && random() < 0.12)) return { type: 'pass' };
   moves.sort((a, b) => {
-    const cost = (move: Play) => (['bomb', 'rocket'].includes(move.pattern.type) ? 30 : 0) + move.pattern.rank - (!view.trick ? move.cards.length * 1.8 : 0);
+    const cost = (move: Play) => (['bomb', 'rocket'].includes(move.pattern.type) ? 30 : 0) + rankPower(move.pattern.rank, rules) - (!view.trick ? move.cards.length * 1.8 : 0);
     return cost(a) - cost(b);
   });
   const index = random() < 0.18 ? Math.min(moves.length - 1, 2) : 0;
   return { type: 'play', cards: moves[index].cards };
 }
 
-// 只能从公开信息抽样：自己的手牌、明牌玩家的公开手牌、公开底牌、牌数和已出的牌。
-// 未明牌的对手真实手牌永远不作为 chooseAction 的入参。
+// 只能从公开信息抽样：自己的手牌、明牌/心灵感应公开手牌、公开底牌、牌数和已出的牌。
+// 未公开的对手真实手牌永远不作为 chooseAction 的入参。
 export function samplePossibleHands(view: BotView, random: () => number = Math.random) {
-  const laiziRank = view.laiziRank ?? null;
+  const rules = viewRules(view);
   const known = new Set([...view.hand, ...view.playedCards.flat()]);
   const hands: CardId[][] = [[], [], []];
   hands[view.seat] = [...view.hand];
@@ -207,7 +222,7 @@ export function samplePossibleHands(view: BotView, random: () => number = Math.r
     const needed = view.counts[seat] - hands[seat].length;
     if (needed < 0) return null;
     hands[seat].push(...loose.splice(0, needed));
-    hands[seat] = sortCards(hands[seat], laiziRank);
+    hands[seat] = sortCards(hands[seat], rules);
   }
   return loose.length ? null : hands;
 }
@@ -215,8 +230,10 @@ export function samplePossibleHands(view: BotView, random: () => number = Math.r
 function simulationState(view: BotView, hands: CardId[][]): GameState {
   return {
     ...view, hands, seed: 0, mode: view.mode || 'classic', laiziRank: view.laiziRank ?? null,
+    affixes: [...(view.affixes || [])],
     seq: view.seq || 0, firstBidder: 0, deal: view.deal || 1,
     highestBidder: view.landlordSeat, openSeats: [...(view.openSeats || [false, false, false])],
+    forcedOpenSeats: [...(view.forcedOpenSeats || [false, false, false])],
     surrenderBy: null, passes: view.passes || 0, history: [],
     tablePlays: view.tablePlays || [null, null, null], bids: view.bids || [0, 0, 0],
     playedCards: view.playedCards.map(cards => [...cards]), playCounts: [...view.playCounts],
@@ -225,17 +242,21 @@ function simulationState(view: BotView, hands: CardId[][]): GameState {
 }
 
 function rolloutAction(state: GameState): Action {
+  const rules = stateRules(state);
   const seat = state.turn;
   const hand = state.hands[seat!];
-  const moves = legalPlays(hand, state.trick?.pattern, state.laiziRank);
-  const finish = moves.find(move => move.cards.length === hand.length);
+  const moves = legalPlays(hand, state.trick?.pattern, rules);
+  const finish = moves.find(move => move.cards.length === hand.length || (rules.bombDiscard && move.pattern.type === 'bomb' && hand.length - move.cards.length === 1));
   if (finish) return { type: 'play', cards: finish.cards };
   if (!moves.length || (state.trick && sameSide(seat, state.trick.seat, state.landlordSeat))) return { type: 'pass' };
   const danger = state.hands.some((cards, index) => cards.length <= 2 && !sameSide(seat, index, state.landlordSeat));
   moves.sort((a, b) => {
-    const cost = (move: Play) => -move.cards.length * 2 + move.pattern.rank * 0.08
-      + (['bomb', 'rocket'].includes(move.pattern.type) && !danger ? 12 : 0)
-      + (move.pattern.type === 'single' && danger ? (17 - move.pattern.rank) * 0.55 : 0);
+    const cost = (move: Play) => {
+      const p = rankPower(move.pattern.rank, rules);
+      return -move.cards.length * 2 + p * 0.08
+        + (['bomb', 'rocket'].includes(move.pattern.type) && !danger ? 12 : 0)
+        + (move.pattern.type === 'single' && danger ? (17 - p) * 0.55 : 0);
+    };
     return cost(a) - cost(b);
   });
   if (state.trick && ['bomb', 'rocket'].includes(moves[0].pattern.type) && !danger) return { type: 'pass' };
@@ -245,8 +266,11 @@ function rolloutAction(state: GameState): Action {
 function simulationValue(state: GameState, mySeat: number) {
   const mine = mySeat === state.landlordSeat ? 'landlord' : 'farmers';
   if (state.phase === 'ended') return state.winnerSide === mine ? 1 : -1;
-  const landlordLeft = state.hands[state.landlordSeat!].length / 20;
-  const farmersLeft = Math.min(...state.hands.filter((_, seat) => seat !== state.landlordSeat).map(cards => cards.length / 17));
+  const rules = stateRules(state);
+  const farmerInit = (54 - rules.bottomCount) / 3;
+  const landlordInit = farmerInit + rules.bottomCount;
+  const landlordLeft = state.hands[state.landlordSeat!].length / landlordInit;
+  const farmersLeft = Math.min(...state.hands.filter((_, seat) => seat !== state.landlordSeat).map(cards => cards.length / farmerInit));
   const edge = (farmersLeft - landlordLeft) * 0.8;
   return mine === 'landlord' ? edge : -edge;
 }
@@ -284,14 +308,15 @@ export function chooseAction(view: BotView, difficulty: string = 'hard', { rando
   if (view.phase === 'bidding') return bid(view, level, random);
   if (view.phase !== 'playing') return null;
   if (level === 'easy') return chooseEasy(view, random);
+  const rules = viewRules(view);
   const ranked = suggestedPlays(view, level === 'hell' ? 650 : 300);
-  const finish = ranked.find(move => move.cards.length === view.hand.length);
+  const finish = ranked.find(move => move.cards.length === view.hand.length || (rules.bombDiscard && move.pattern.type === 'bomb' && view.hand.length - move.cards.length === 1));
   if (finish) return { type: 'play', cards: finish.cards };
   if (!ranked.length) return { type: 'pass' };
   if (view.trick && sameSide(view.seat, view.trick.seat, view.landlordSeat)) return { type: 'pass' };
   let preferred: Action = { type: 'play', cards: ranked[0].cards };
   if (view.trick && !urgency(view)) {
-    const current = handPlanner(view.hand, 80, view.laiziRank ?? null).cost(view.hand) * 12 + 4;
+    const current = handPlanner(view.hand, 80, rules).cost(view.hand) * 12 + 4;
     if (ranked[0].score > current) preferred = { type: 'pass' };
   }
   return level === 'hell' ? chooseHell(view, ranked, preferred, random, deadline) : preferred;

@@ -339,3 +339,53 @@ test('单人模式（真人配人机）：真人投降无需队友确认直接�
   } finally { await f.close(); }
 });
 
+test('肉鸽模式联机：建房、房间切换模式、开局下发 2 条随机词条并记录 roguelike 战绩', { timeout: 20000 }, async () => {
+  const f = await fixture();
+  try {
+    const host = await f.connect({ nickname: '肉鸽房主' });
+    const guest = await f.connect({ nickname: '肉鸽牌友' });
+    host.send('create', { difficulty: 'hard', mode: 'classic' });
+    await waitUntil(() => host.state!);
+    const code = host.state!.room.code;
+    guest.send('join', { code });
+    await waitUntil(() => guest.state?.room.code === code);
+    // 房主在等待页切换到肉鸽模式
+    host.send('settings', { mode: 'roguelike' });
+    await waitUntil(() => guest.state!.room.mode === 'roguelike');
+    guest.send('ready', { ready: true });
+    await waitUntil(() => host.state!.room.players[1]!.ready);
+    host.send('start');
+    await waitUntil(() => host.state!.game?.phase === 'bidding' && guest.state!.game?.phase === 'bidding');
+    assert.equal(host.state!.game!.mode, 'roguelike');
+    assert.equal(host.state!.game!.affixes.length, 2);
+    assert.deepEqual(host.state!.game!.affixes, guest.state!.game!.affixes);
+
+    const domain = f.service.rooms.get(code)!;
+    while (domain.game!.phase === 'bidding') {
+      if (domain.game!.turn === 2) await delay(30);
+      else {
+        const client = domain.game!.turn === 0 ? host : guest;
+        const seq = domain.game!.seq;
+        client.send('action', { type: 'bid', score: 3 });
+        await waitUntil(() => domain.game!.seq > seq);
+      }
+    }
+    let steps = 0;
+    while (domain.game!.phase !== 'ended' && steps < 220) {
+      if (domain.game!.turn === 2) { await delay(25); continue; }
+      const client = domain.game!.turn === 0 ? host : guest;
+      await waitUntil(() => client.state!.game!.seq === domain.game!.seq);
+      const seq = domain.game!.seq;
+      const action = chooseAction({ ...client.state!.game!, seat: client.state!.me.seat }, 'hard', { thinkMs: 20 });
+      assert(action);
+      client.send('action', action);
+      await waitUntil(() => domain.game!.seq > seq);
+      steps++;
+    }
+    assert.equal(domain.game!.phase, 'ended');
+    assert.equal(f.matches.length, 1);
+    assert.equal(f.matches[0].mode, 'roguelike-hard');
+  } finally { await f.close(); }
+});
+
+

@@ -1,6 +1,20 @@
 export type CardId = string;
 export type Difficulty = 'easy' | 'hard' | 'hell';
-export type GameMode = 'classic' | 'laizi';
+export type GameMode = 'classic' | 'laizi' | 'roguelike';
+export type AffixId = 'underdog' | 'imperfect' | 'openLandlord' | 'bombAllergy' | 'wildDrop' | 'telepathy' | 'multiplierSurge';
+export interface AffixInfo { id: AffixId; name: string; short: string; description: string; conflicts: AffixId[] }
+export interface RuleConfig {
+  laiziRank: number | null;
+  threeIsHighest: boolean;
+  minStraight: number;
+  minPairStraight: number;
+  bottomCount: number;
+  landlordOpen: boolean;
+  farmerTelepathy: boolean;
+  bombDiscard: boolean;
+  initialMultiplier: number;
+  bombMultiplier: number;
+}
 export type BombKind = 'soft' | 'hard' | 'pure';
 export type PatternType = 'single' | 'pair' | 'triple' | 'tripleSingle' | 'triplePair' | 'straight' | 'pairStraight' | 'airplane' | 'airplaneSingle' | 'airplanePair' | 'fourSingles' | 'fourPairs' | 'bomb' | 'rocket';
 export interface Pattern { type: PatternType; label: string; rank: number; size: number; chain: number; bombKind?: BombKind }
@@ -14,17 +28,17 @@ export type GameEvent = (
   | { type: 'bid'; seat: number; score: number; id?: number }
   | { type: 'landlord'; seat: number; landlordSeat: number; score: number; id?: number }
   | { type: 'pass'; seat: number; resetTrick?: boolean; id?: number }
-  | { type: 'play'; seat: number; cards: CardId[]; pattern: Pattern; ended?: boolean; spring?: boolean; id?: number }
+  | { type: 'play'; seat: number; cards: CardId[]; pattern: Pattern; discarded?: CardId; ended?: boolean; spring?: boolean; id?: number }
   | { type: 'openHand'; seat: number; id?: number }
   | { type: 'surrender'; seat: number; side: 'landlord' | 'farmers'; id?: number }
 ) & { source?: ActionSource; pattern?: Pattern };
 export type TablePlay = (Play & {pass?: undefined}) | { pass: true; cards?: undefined; pattern?: undefined } | null;
 export interface GameState {
-  seed: number; mode: GameMode; laiziRank: number | null;
+  seed: number; mode: GameMode; laiziRank: number | null; affixes: AffixId[];
   firstBidder: number; deal: number; seq: number; phase: 'bidding' | 'playing' | 'ended';
   turn: number | null; hands: CardId[][]; bottom: CardId[]; bids: number[]; highestBid: number;
   highestBidder: number | null; landlordSeat: number | null; multiplier: number;
-  openSeats: boolean[]; surrenderBy: number | null;
+  openSeats: boolean[]; forcedOpenSeats: boolean[]; surrenderBy: number | null;
   trick: Trick | null; passes: number; tablePlays: TablePlay[]; playedCards: CardId[][];
   playCounts: number[]; history: GameEvent[]; lastAction: GameEvent;
   winnerSide: 'landlord' | 'farmers' | null; winnerSeat: number | null; spring: boolean; scores: number[] | null;

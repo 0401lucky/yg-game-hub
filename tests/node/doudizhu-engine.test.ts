@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DECK, cardInfo, rankOf, createGame, classify, canBeat, legalPlays, applyAction, applyOpenHand, applySurrender, publicState, seededRandom } from '../../games/doudizhu/engine.ts';
+import { DECK, cardInfo, rankOf, createGame, classify, canBeat, legalPlays, applyAction, applyOpenHand, applySurrender, publicState, seededRandom, sortCards, stateRules } from '../../games/doudizhu/engine.ts';
+import { resolveRules, AFFIX_LIST } from '../../games/doudizhu/affixes.ts';
 import { chooseAction, botView, samplePossibleHands, suggestedPlays, shouldBotOpenHand } from '../../games/doudizhu/bot.ts';
 
-import type { CardId, Difficulty, GameState, PatternType, Play } from '../../games/doudizhu/types.ts';
+import type { AffixId, CardId, Difficulty, GameState, PatternType, Play } from '../../games/doudizhu/types.ts';
 import { acceptedState, rejectionCode } from './helpers.ts';
 
 const cards = (...ranks: number[]): CardId[] => {
@@ -261,4 +262,131 @@ test('投降：叫分阶段禁止投降，出牌阶段投降立即判对方胜�
   assert.equal(farmerLose.winnerSide, 'landlord');
   assert.deepEqual(farmerLose.scores, [4, -2, -2]);
 });
+
+test('肉鸽词条：以下犯上（3 最大且不入顺）、残缺之美（4顺/2连对）、倍率狂飙', () => {
+  const underdog = resolveRules(['underdog']);
+  assert(canBeat(classify(cards(3), underdog), classify(cards(15), underdog), underdog));
+  assert(!canBeat(classify(cards(15), underdog), classify(cards(3), underdog), underdog));
+  assert(canBeat(classify(cards(16), underdog), classify(cards(3), underdog), underdog));
+  assert(canBeat(classify(cards(3, 3, 3, 3), underdog), classify(cards(15, 15, 15, 15), underdog), underdog));
+  // 3 不参与顺子、连对与飞机机身
+  assert.equal(classify(cards(3, 4, 5, 6, 7), underdog), null);
+  assert.equal(classify(cards(3, 3, 4, 4, 5, 5), underdog), null);
+  assert.equal(classify(cards(4, 5, 6, 7, 8), underdog)?.type, 'straight');
+  // 排序时 3 排在 2 前面、小王后面
+  assert.deepEqual(sortCards(['S15', 'S3', 'BJ', 'S14'], underdog), ['BJ', 'S3', 'S15', 'S14']);
+
+  const imperfect = resolveRules(['imperfect']);
+  assert.equal(classify(cards(4, 5, 6, 7), imperfect)?.type, 'straight');
+  assert.equal(classify(cards(8, 8, 9, 9), imperfect)?.type, 'pairStraight');
+  assert.equal(classify(cards(4, 5, 6, 7)), null);
+  assert.equal(classify(cards(8, 8, 9, 9)), null);
+  const hand = cards(6, 7, 8, 9, 10, 10, 11, 11);
+  const moves = legalPlays(hand, null, imperfect);
+  assert(moves.some(m => m.pattern.type === 'straight' && m.cards.length === 4));
+  assert(moves.some(m => m.pattern.type === 'pairStraight' && m.cards.length === 4));
+
+  // 倍率狂飙：开局初始倍率 ×2，炸弹/王炸 ×3
+  let surge = createGame({ seed: 303, mode: 'roguelike', affixes: ['multiplierSurge'] });
+  assert.equal(surge.multiplier, 2);
+  surge = { ...surge, phase: 'playing', landlordSeat: 0, turn: 0, highestBid: 1, hands: [cards(5, 5, 5, 5, 6), cards(16, 17, 7), cards(8, 9)] };
+  surge = acceptedState(applyAction(surge, 0, { type: 'play', cards: surge.hands[0].slice(0, 4) }));
+  assert.equal(surge.multiplier, 6);
+  surge = acceptedState(applyAction(surge, 1, { type: 'play', cards: ['BJ', 'RJ'] }));
+  assert.equal(surge.multiplier, 18);
+});
+
+test('肉鸽词条：明牌地主（6底牌强制明牌）、心灵感应（农民互看）、炸弹过敏（出炸弹弃1张）', () => {
+  // 明牌地主：每人 16 张 + 6 张底牌，地主拿后 22 张且强制明牌不翻倍
+  let openGame = createGame({ seed: 501, firstBidder: 0, mode: 'roguelike', affixes: ['openLandlord'] });
+  assert.deepEqual(openGame.hands.map(h => h.length), [16, 16, 16]);
+  assert.equal(openGame.bottom.length, 6);
+  assert.equal(openGame.multiplier, 1);
+  openGame = acceptedState(applyAction(openGame, 0, { type: 'bid', score: 3 }));
+  assert.equal(openGame.hands[0].length, 22);
+  assert.equal(openGame.forcedOpenSeats[0], true);
+  assert.equal(openGame.openSeats[0], false);
+  assert.equal(openGame.multiplier, 1);
+  assert.deepEqual(publicState(openGame, 1).openHands[0], openGame.hands[0]);
+  assert.equal(publicState(openGame, 1).openHands[2], null);
+
+  // 心灵感应：确定地主后两位农民互相可见手牌，地主看不到
+  let tele = createGame({ seed: 502, firstBidder: 0, mode: 'roguelike', affixes: ['telepathy'] });
+  assert.deepEqual(publicState(tele, 1).openHands, [null, null, null]);
+  tele = acceptedState(applyAction(tele, 0, { type: 'bid', score: 3 }));
+  assert.deepEqual(publicState(tele, 1).openHands[2], tele.hands[2]);
+  assert.deepEqual(publicState(tele, 2).openHands[1], tele.hands[1]);
+  assert.equal(publicState(tele, 0).openHands[1], null);
+  assert.equal(publicState(tele, 0).openHands[2], null);
+  const farmerSample = samplePossibleHands(botView(tele, 1), seededRandom(11));
+  assert(farmerSample);
+  assert.deepEqual(farmerSample[2], tele.hands[2]);
+
+  // 炸弹过敏：出炸弹随机弃掉 1 张并记入 playedCards；若只剩 1 张则直接胜出
+  let allergy = createGame({ seed: 503, mode: 'roguelike', affixes: ['bombAllergy'] });
+  allergy = { ...allergy, phase: 'playing', landlordSeat: 0, turn: 0, highestBid: 2, hands: [cards(8, 8, 8, 8, 9, 10), cards(4, 5), cards(6, 7)] };
+  const afterBomb = acceptedState(applyAction(allergy, 0, { type: 'play', cards: allergy.hands[0].slice(0, 4) }));
+  assert.equal(afterBomb.hands[0].length, 1);
+  assert.equal(afterBomb.playedCards[0].length, 5);
+  assert(afterBomb.lastAction.type === 'play' && Boolean(afterBomb.lastAction.discarded));
+  // 4张炸弹 + 1张手牌 -> 触发炸弹过敏弃掉最后一张直接获胜
+  const winByAllergy = acceptedState(applyAction(
+    { ...allergy, hands: [cards(8, 8, 8, 8, 9), cards(4, 5), cards(6, 7)] },
+    0,
+    { type: 'play', cards: cards(8, 8, 8, 8) }
+  ));
+  assert.equal(winByAllergy.phase, 'ended');
+  assert.equal(winByAllergy.winnerSeat, 0);
+  assert.equal(winByAllergy.hands[0].length, 0);
+});
+
+test('肉鸽模式：每局随机 2 条词条、重发牌重新随机词条、全词条组合人机完赛且牌数积分守恒', () => {
+  // 重发牌后词条重新随机（验证多次不叫重发能产生不同词条）
+  let sawDiff = false;
+  for (let seed = 1; seed <= 12; seed++) {
+    let state = createGame({ seed: seed * 97, firstBidder: 0, mode: 'roguelike' });
+    assert.equal(state.affixes.length, 2);
+    assert.equal(new Set(state.affixes).size, 2);
+    const beforeAffixes = [...state.affixes];
+    for (let s = 0; s < 3; s++) state = acceptedState(applyAction(state, s, { type: 'bid', score: 0 }));
+    assert.equal(state.deal, 2);
+    assert.equal(state.affixes.length, 2);
+    if (state.affixes.join(',') !== beforeAffixes.join(',')) sawDiff = true;
+  }
+  assert(sawDiff, '重发牌应重新随机词条');
+
+  // 覆盖每条词条参与完整人机对局，并加测随机肉鸽局
+  const forcedPairs: (AffixId[] | undefined)[] = [
+    ['underdog', 'imperfect'],
+    ['openLandlord', 'telepathy'],
+    ['bombAllergy', 'wildDrop'],
+    ['multiplierSurge', 'underdog'],
+    ['wildDrop', 'imperfect'],
+    undefined, undefined, undefined, undefined, undefined, undefined, undefined
+  ];
+  assert.equal(AFFIX_LIST.length, 7);
+  for (let i = 0; i < forcedPairs.length; i++) {
+    let state = createGame({ seed: (i + 1) * 1307, firstBidder: i % 3, mode: 'roguelike', affixes: forcedPairs[i] });
+    const rules = stateRules(state);
+    if (state.affixes.includes('wildDrop')) assert(state.laiziRank !== null);
+    else assert.equal(state.laiziRank, null);
+    assert.equal(state.bottom.length, rules.bottomCount);
+    const random = seededRandom(i + 500);
+    let actions = 0;
+    while (state.phase !== 'ended' && actions < 260) {
+      const level = (['easy', 'hard', 'hell'] as Difficulty[])[state.turn!];
+      const action = chooseAction(botView(state, state.turn!), level, { random, thinkMs: 35 });
+      const result = applyAction(state, state.turn, action);
+      assert(result.ok, `roguelike i=${i} affixes=${state.affixes.join(',')}: ${JSON.stringify({ action, result })}`);
+      state = acceptedState(result);
+      const allCards = [...state.hands.flat(), ...state.playedCards.flat(), ...(state.phase === 'bidding' ? state.bottom : [])];
+      assert.equal(allCards.length, 54);
+      assert.equal(new Set(allCards).size, 54);
+      actions++;
+    }
+    assert.equal(state.phase, 'ended', `roguelike i=${i} 未结束`);
+    assert.equal(state.scores!.reduce((sum, score) => sum + score, 0), 0);
+  }
+});
+
 

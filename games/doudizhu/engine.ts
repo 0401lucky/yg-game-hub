@@ -1,4 +1,5 @@
-import type { CardId, CardInfo, Pattern, PatternType, Play, GameState, GameEvent, Action, ActionResult, PublicGame, GameMode, BombKind } from './types.ts';
+import type { AffixId, CardId, CardInfo, Pattern, PatternType, Play, GameState, GameEvent, Action, ActionResult, PublicGame, GameMode, BombKind, RuleConfig } from './types.ts';
+import { resolveRules, rollAffixes } from './affixes.ts';
 // 斗地主规则在服务端与客户端提示中共用。对手手牌（未明牌）和洗牌种子不进入公开快照。
 export const SUITS = [
   { id: 'S', name: 'spade', symbol: '♠', red: false },
@@ -22,19 +23,36 @@ const cardsById: Map<CardId, CardInfo> = new Map(DECK.map(id => {
   return [id, Object.freeze({ id, rank, label: RANK_LABELS[rank] || String(rank), suit: suit.name, symbol: suit.symbol, red: suit.red })];
 }));
 
+export type RuleInput = number | null | RuleConfig | undefined;
+
+export function normalizeRules(input: RuleInput = null, affixes?: readonly AffixId[]): RuleConfig {
+  if (input && typeof input === 'object') return input;
+  return resolveRules(affixes ?? [], input ?? null);
+}
+
 export function cardInfo(id: CardId) { return cardsById.get(id) || null; }
 export function rankOf(id: CardId) { return cardInfo(id)?.rank ?? -1; }
 export function rankLabel(rank: number) { return RANK_LABELS[rank] || String(rank); }
-export function sortCards(cards: readonly CardId[], laiziRank: number | null = null) {
+// 统一比较点数的强弱顺序：开启“以下犯上”时，3 的顺位排在 2 和小王之间（15.5）。
+export function rankPower(rank: number, rules: RuleInput = null): number {
+  const cfg = normalizeRules(rules);
+  if (cfg.threeIsHighest && rank === 3) return 15.5;
+  return rank;
+}
+function minSeqRank(cfg: RuleConfig) { return cfg.threeIsHighest ? 4 : 3; }
+
+export function sortCards(cards: readonly CardId[], rules: RuleInput = null) {
+  const cfg = normalizeRules(rules);
+  const laiziRank = cfg.laiziRank;
   return [...cards].sort((a, b) => {
     const aWild = laiziRank !== null && rankOf(a) === laiziRank ? 1 : 0;
     const bWild = laiziRank !== null && rankOf(b) === laiziRank ? 1 : 0;
-    return bWild - aWild || rankOf(b) - rankOf(a) || DECK.indexOf(a) - DECK.indexOf(b);
+    return bWild - aWild || rankPower(rankOf(b), cfg) - rankPower(rankOf(a), cfg) || DECK.indexOf(a) - DECK.indexOf(b);
   });
 }
-export function rankGroups(cards: readonly CardId[]) {
+export function rankGroups(cards: readonly CardId[], rules: RuleInput = null) {
   const groups: Map<number, CardId[]> = new Map();
-  for (const id of sortCards(cards)) {
+  for (const id of sortCards(cards, rules)) {
     const rank = rankOf(id);
     if (!groups.has(rank)) groups.set(rank, []);
     groups.get(rank)!.push(id);
@@ -64,6 +82,10 @@ function pickLaiziRank(seed: number, deal: number) {
   const random = seededRandom((seed ^ Math.imul(deal + 1, 0x9E3779B1)) >>> 0);
   return 3 + Math.floor(random() * 13);
 }
+function pickAffixes(seed: number, deal: number) {
+  const random = seededRandom((seed ^ Math.imul(deal + 3, 0x85EBCA6B)) >>> 0);
+  return rollAffixes(random, 2);
+}
 
 const labels: Record<PatternType, string> = {
   single: '单张', pair: '对子', triple: '三张', tripleSingle: '三带一', triplePair: '三带二',
@@ -82,12 +104,12 @@ function makePattern(type: PatternType, rank: number, size: number, chain = 1, b
   const label = type === 'bomb' && bombKind ? bombLabels[bombKind] : labels[type];
   return bombKind ? { type, label, rank, size, chain, bombKind } : { type, label, rank, size, chain };
 }
-function consecutive(ranks: number[]) {
-  return ranks.length > 0 && ranks.at(-1)! <= 14 && ranks.every((rank, i) => !i || rank === ranks[i - 1] + 1);
+function consecutive(ranks: number[], cfg: RuleConfig) {
+  return ranks.length > 0 && ranks[0] >= minSeqRank(cfg) && ranks.at(-1)! <= 14 && ranks.every((rank, i) => !i || rank === ranks[i - 1] + 1);
 }
 
-function classifyClassic(cards: CardId[]): Pattern | null {
-  const groups: Map<number, CardId[]> = rankGroups(cards);
+function classifyClassic(cards: CardId[], cfg: RuleConfig): Pattern | null {
+  const groups: Map<number, CardId[]> = rankGroups(cards, cfg);
   const ranks = [...groups.keys()].sort((a, b) => a - b);
   const counts = ranks.map(rank => groups.get(rank)!.length);
   const n = cards.length;
@@ -99,16 +121,17 @@ function classifyClassic(cards: CardId[]): Pattern | null {
   }
   if (n === 4 && main(3) !== undefined) return makePattern('tripleSingle', main(3)!, n);
   if (n === 5 && main(3) !== undefined && main(2) !== undefined) return makePattern('triplePair', main(3)!, n);
-  if (n >= 5 && counts.every(count => count === 1) && consecutive(ranks)) return makePattern('straight', ranks.at(-1)!, n, n);
-  if (n >= 6 && counts.every(count => count === 2) && consecutive(ranks)) return makePattern('pairStraight', ranks.at(-1)!, n, n / 2);
-  if (n >= 6 && counts.every(count => count === 3) && consecutive(ranks)) return makePattern('airplane', ranks.at(-1)!, n, n / 3);
+  if (n >= cfg.minStraight && counts.every(count => count === 1) && consecutive(ranks, cfg)) return makePattern('straight', ranks.at(-1)!, n, n);
+  if (n >= cfg.minPairStraight * 2 && counts.every(count => count === 2) && consecutive(ranks, cfg)) return makePattern('pairStraight', ranks.at(-1)!, n, n / 2);
+  if (n >= 6 && counts.every(count => count === 3) && consecutive(ranks, cfg)) return makePattern('airplane', ranks.at(-1)!, n, n / 3);
   if (n === 6 && main(4) !== undefined) return makePattern('fourSingles', main(4)!, n);
   if (n === 8 && main(4) !== undefined && counts.filter(count => count === 2).length === 2) return makePattern('fourPairs', main(4)!, n);
 
+  const seqStart = minSeqRank(cfg);
   for (const [type, divisor] of ([['airplaneSingle', 4], ['airplanePair', 5]] as const)) {
     const length = n / divisor;
     if (!Number.isInteger(length) || length < 2) continue;
-    for (let start = 3; start + length - 1 <= 14; start++) {
+    for (let start = seqStart; start + length - 1 <= 14; start++) {
       const body = Array.from({ length }, (_, i) => start + i);
       if (!body.every(rank => groups.get(rank)?.length === 3)) continue;
       const wings = ranks.filter(rank => !body.includes(rank)).map(rank => groups.get(rank)!.length);
@@ -122,20 +145,22 @@ function classifyClassic(cards: CardId[]): Pattern | null {
   return null;
 }
 
-function comparePatterns(a: Pattern, b: Pattern) {
+function comparePatterns(a: Pattern, b: Pattern, cfg: RuleConfig) {
   if (a.type !== b.type) return patternPriority[b.type] - patternPriority[a.type];
   if (a.type === 'bomb' && b.type === 'bomb') {
     const diff = bombPower[b.bombKind || 'hard'] - bombPower[a.bombKind || 'hard'];
     if (diff) return diff;
   }
-  return b.rank - a.rank;
+  return rankPower(b.rank, cfg) - rankPower(a.rank, cfg);
 }
 
-// 给定一组牌与癞子点数，返回所有可合法解释成的牌型（已按强弱去重排序）。
-export function classifyAll(cards: CardId[], laiziRank: number | null = null): Pattern[] {
+// 给定一组牌与规则配置，返回所有可合法解释成的牌型（已按强弱去重排序）。
+export function classifyAll(cards: CardId[], rules: RuleInput = null): Pattern[] {
   if (!Array.isArray(cards) || !cards.length || new Set(cards).size !== cards.length || cards.some(id => !cardInfo(id))) return [];
+  const cfg = normalizeRules(rules);
+  const laiziRank = cfg.laiziRank;
   if (laiziRank === null) {
-    const one = classifyClassic(cards);
+    const one = classifyClassic(cards, cfg);
     return one ? [one] : [];
   }
   const n = cards.length;
@@ -147,7 +172,7 @@ export function classifyAll(cards: CardId[], laiziRank: number | null = null): P
     else fixedCounts[r]++;
   }
   if (!wilds) {
-    const one = classifyClassic(cards);
+    const one = classifyClassic(cards, cfg);
     return one ? [one] : [];
   }
   const hasJoker = fixedCounts[16] > 0 || fixedCounts[17] > 0;
@@ -186,9 +211,7 @@ export function classifyAll(cards: CardId[], laiziRank: number | null = null): P
       const leftWild = wilds - needMain;
       const otherSum = n - wilds - fixedCounts[mainRank];
       if (otherSum + leftWild === 1) {
-        // 避免全 4 张凑成相同点数（那应为炸弹，但三带一翅膀不同点数）
         if (otherSum === 0 && leftWild === 1) {
-          // 剩 1 癞子可当任意不同单牌
           add(makePattern('tripleSingle', mainRank, 4));
         } else if (otherSum === 1 && leftWild === 0) {
           add(makePattern('tripleSingle', mainRank, 4));
@@ -208,13 +231,15 @@ export function classifyAll(cards: CardId[], laiziRank: number | null = null): P
     }
   }
   // 顺子、连对、飞机机身
-  if (!hasJoker && fixedCounts[15] === 0) {
-    const seqSpecs: [PatternType, number, number][] = [['straight', 1, 5], ['pairStraight', 2, 3], ['airplane', 3, 2]];
+  const seqStart = minSeqRank(cfg);
+  const maxSeqLen = 14 - seqStart + 1;
+  if (!hasJoker && fixedCounts[15] === 0 && (!cfg.threeIsHighest || fixedCounts[3] === 0)) {
+    const seqSpecs: [PatternType, number, number][] = [['straight', 1, cfg.minStraight], ['pairStraight', 2, cfg.minPairStraight], ['airplane', 3, 2]];
     for (const [type, copies, minLen] of seqSpecs) {
       if (n % copies !== 0) continue;
       const len = n / copies;
-      if (len < minLen || len > 12) continue;
-      for (let start = 3; start + len - 1 <= 14; start++) {
+      if (len < minLen || len > maxSeqLen) continue;
+      for (let start = seqStart; start + len - 1 <= 14; start++) {
         const end = start + len - 1;
         let ok = true;
         for (const r of fixedRanks) if (r < start || r > end || fixedCounts[r] > copies) { ok = false; break; }
@@ -253,7 +278,7 @@ export function classifyAll(cards: CardId[], laiziRank: number | null = null): P
     const len = n / divisor;
     if (!Number.isInteger(len) || len < 2 || len > 6) continue;
     if (type === 'airplanePair' && hasJoker) continue;
-    for (let start = 3; start + len - 1 <= 14; start++) {
+    for (let start = seqStart; start + len - 1 <= 14; start++) {
       const end = start + len - 1;
       let needBody = 0;
       let bodyOk = true;
@@ -277,22 +302,24 @@ export function classifyAll(cards: CardId[], laiziRank: number | null = null): P
     }
   }
 
-  return [...found.values()].sort(comparePatterns);
+  return [...found.values()].sort((a, b) => comparePatterns(a, b, cfg));
 }
 
-export function classify(cards: CardId[], laiziRank: number | null = null, target: Pattern | null | undefined = null): Pattern | null {
-  const candidates = classifyAll(cards, laiziRank);
+export function classify(cards: CardId[], rules: RuleInput = null, target: Pattern | null | undefined = null): Pattern | null {
+  const cfg = normalizeRules(rules);
+  const candidates = classifyAll(cards, cfg);
   if (!candidates.length) return null;
   if (target) {
-    const beating = candidates.filter(candidate => canBeat(candidate, target));
+    const beating = candidates.filter(candidate => canBeat(candidate, target, cfg));
     if (beating.length) return beating[0];
   }
   return candidates[0];
 }
 
-export function canBeat(play: Pattern | null, target: Pattern | null | undefined) {
+export function canBeat(play: Pattern | null, target: Pattern | null | undefined, rules: RuleInput = null) {
   if (!play) return false;
   if (!target) return true;
+  const cfg = normalizeRules(rules);
   if (target.type === 'rocket') return false;
   if (play.type === 'rocket') return true;
   if (play.type === 'bomb') {
@@ -300,9 +327,9 @@ export function canBeat(play: Pattern | null, target: Pattern | null | undefined
     const playPower = bombPower[play.bombKind || 'hard'];
     const targetPower = bombPower[target.bombKind || 'hard'];
     if (playPower !== targetPower) return playPower > targetPower;
-    return play.rank > target.rank;
+    return rankPower(play.rank, cfg) > rankPower(target.rank, cfg);
   }
-  return play.type === target.type && play.size === target.size && play.chain === target.chain && play.rank > target.rank;
+  return play.type === target.type && play.size === target.size && play.chain === target.chain && rankPower(play.rank, cfg) > rankPower(target.rank, cfg);
 }
 
 function chooseRanks(items: number[], amount: number, visit: (items: number[]) => void, start = 0, picked: number[] = []) {
@@ -322,15 +349,18 @@ function chooseSingles(groups: Map<number, CardId[]>, amount: number, visit: (it
   walk(0, amount, []);
 }
 
-export function legalPlays(hand: CardId[], target: Pattern | null | undefined = null, laiziRank: number | null = null) {
-  const groups: Map<number, CardId[]> = rankGroups(hand);
+export function legalPlays(hand: CardId[], target: Pattern | null | undefined = null, rules: RuleInput = null) {
+  const cfg = normalizeRules(rules);
+  const laiziRank = cfg.laiziRank;
+  const seqStart = minSeqRank(cfg);
+  const groups: Map<number, CardId[]> = rankGroups(hand, cfg);
   const ranks = [...groups.keys()].sort((a, b) => a - b);
   const plays: Play[] = [];
   const seen = new Set<string>();
   function add(cards: CardId[]) {
-    const value = classify(cards, laiziRank, target);
-    if (!canBeat(value, target)) return;
-    const sorted = sortCards(cards, laiziRank);
+    const value = classify(cards, cfg, target);
+    if (!canBeat(value, target, cfg)) return;
+    const sorted = sortCards(cards, cfg);
     const key = [...sorted].sort().join(',');
     if (seen.has(key)) return;
     seen.add(key);
@@ -355,8 +385,8 @@ export function legalPlays(hand: CardId[], target: Pattern | null | undefined = 
   }
   if (groups.has(16) && groups.has(17)) add([groups.get(16)![0], groups.get(17)![0]]);
 
-  for (const [copies, minimum] of [[1, 5], [2, 3], [3, 2]]) {
-    for (let start = 3; start <= 14; start++) {
+  for (const [copies, minimum] of [[1, cfg.minStraight], [2, cfg.minPairStraight], [3, 2]]) {
+    for (let start = seqStart; start <= 14; start++) {
       const body: number[] = [];
       for (let end = start; end <= 14 && (groups.get(end)?.length || 0) >= copies; end++) {
         body.push(end);
@@ -421,9 +451,10 @@ export function legalPlays(hand: CardId[], target: Pattern | null | undefined = 
       for (const pair of pairPickers) add([...pureTriple, ...pair]);
     }
     // 顺子 / 连对 / 飞机补缺
-    for (const [copies, minimum] of [[1, 5], [2, 3], [3, 2]]) {
-      const maxLen = Math.min(12, Math.floor(hand.length / copies));
-      for (let start = 3; start <= 14; start++) {
+    const maxSeqLen = 14 - seqStart + 1;
+    for (const [copies, minimum] of [[1, cfg.minStraight], [2, cfg.minPairStraight], [3, 2]]) {
+      const maxLen = Math.min(maxSeqLen, Math.floor(hand.length / copies));
+      for (let start = seqStart; start <= 14; start++) {
         let missing = 0;
         const pickedFixed: CardId[] = [];
         for (let end = start; end <= 14; end++) {
@@ -461,14 +492,24 @@ export function legalPlays(hand: CardId[], target: Pattern | null | undefined = 
   return plays;
 }
 
-export function createGame({ seed = Date.now(), firstBidder = 0, deal = 1, seq = 0, mode = 'classic' }: { seed?: number; firstBidder?: number; deal?: number; seq?: number; mode?: GameMode } = {}): GameState {
+export function stateRules(state: Pick<GameState, 'affixes' | 'laiziRank'>): RuleConfig {
+  return resolveRules(state.affixes ?? [], state.laiziRank ?? null);
+}
+
+export function createGame({
+  seed = Date.now(), firstBidder = 0, deal = 1, seq = 0, mode = 'classic', affixes
+}: { seed?: number; firstBidder?: number; deal?: number; seq?: number; mode?: GameMode; affixes?: AffixId[] } = {}): GameState {
   const deck = shuffled(seed);
-  const laiziRank = mode === 'laizi' ? pickLaiziRank(seed, deal) : null;
+  const resolvedAffixes: AffixId[] = affixes ? [...affixes] : mode === 'roguelike' ? pickAffixes(seed, deal) : [];
+  const laiziRank = (mode === 'laizi' || resolvedAffixes.includes('wildDrop')) ? pickLaiziRank(seed, deal) : null;
+  const rules = resolveRules(resolvedAffixes, laiziRank);
+  const perPlayer = (54 - rules.bottomCount) / 3;
   return {
-    seed: Number(seed) >>> 0, mode, laiziRank, firstBidder, deal, seq, phase: 'bidding', turn: firstBidder,
-    hands: [0, 1, 2].map(seat => sortCards(deck.slice(seat * 17, seat * 17 + 17), laiziRank)), bottom: deck.slice(51),
+    seed: Number(seed) >>> 0, mode, laiziRank, affixes: resolvedAffixes, firstBidder, deal, seq, phase: 'bidding', turn: firstBidder,
+    hands: [0, 1, 2].map(seat => sortCards(deck.slice(seat * perPlayer, (seat + 1) * perPlayer), rules)),
+    bottom: deck.slice(perPlayer * 3),
     bids: [-1, -1, -1], highestBid: 0, highestBidder: null, landlordSeat: null,
-    multiplier: 1, openSeats: [false, false, false], surrenderBy: null,
+    multiplier: rules.initialMultiplier, openSeats: [false, false, false], forcedOpenSeats: [false, false, false], surrenderBy: null,
     trick: null, passes: 0, tablePlays: [null, null, null],
     playedCards: [[], [], []], playCounts: [0, 0, 0], history: [], lastAction: { type: 'deal', id: seq },
     winnerSide: null, winnerSeat: null, spring: false, scores: null
@@ -491,7 +532,7 @@ export function applyOpenHand(state: GameState, seat: number | null): ActionResu
   if (seat === null || !Number.isInteger(seat) || seat < 0 || seat > 2) return fail('invalidSeat', '无效的座位');
   if (state.openSeats[seat]) return fail('alreadyOpen', '已经明牌了');
   const next: GameState = {
-    ...state, seq: state.seq + 1, openSeats: [...state.openSeats],
+    ...state, seq: state.seq + 1, openSeats: [...state.openSeats], forcedOpenSeats: [...state.forcedOpenSeats],
     multiplier: state.multiplier * 2, history: [...state.history]
   };
   next.openSeats[seat] = true;
@@ -523,9 +564,11 @@ export function applyAction(state: GameState, seat: number | null, action: Actio
   if (!state || state.phase === 'ended') return fail('ended', '这局已经结束了');
   if (seat === null || !Number.isInteger(seat) || seat !== state.turn) return fail('notYourTurn', '还没有轮到你');
   if (!action || typeof action.type !== 'string') return fail('invalidAction', '无效的操作');
+  const rules = stateRules(state);
   const next: GameState = {
     ...state, seq: state.seq + 1, hands: state.hands.map(hand => [...hand]), bids: [...state.bids],
-    openSeats: [...state.openSeats], tablePlays: [...state.tablePlays],
+    openSeats: [...state.openSeats], forcedOpenSeats: [...state.forcedOpenSeats],
+    tablePlays: [...state.tablePlays],
     playedCards: state.playedCards.map(cards => [...cards]),
     playCounts: [...state.playCounts], history: [...state.history]
   };
@@ -540,12 +583,14 @@ export function applyAction(state: GameState, seat: number | null, action: Actio
     event = { type: 'bid', seat, score };
     if (score === 3 || next.bids.every(value => value >= 0)) {
       if (!next.highestBid) {
+        // 无人叫分重发牌：肉鸽模式下词条也随之重新随机。
         const redealt = createGame({ seed: (state.seed + 0x9E3779B9) >>> 0, firstBidder: (state.firstBidder + 1) % 3, deal: state.deal + 1, seq: next.seq, mode: state.mode });
         redealt.lastAction = { type: 'redeal', id: next.seq };
         return { ok: true, state: redealt };
       }
       next.landlordSeat = next.highestBidder;
-      next.hands[next.landlordSeat!] = sortCards([...next.hands[next.landlordSeat!], ...next.bottom], next.laiziRank);
+      next.hands[next.landlordSeat!] = sortCards([...next.hands[next.landlordSeat!], ...next.bottom], rules);
+      if (rules.landlordOpen) next.forcedOpenSeats[next.landlordSeat!] = true;
       next.phase = 'playing';
       next.turn = next.landlordSeat!;
       event = { ...event, type: 'landlord', landlordSeat: next.landlordSeat!, score: next.highestBid };
@@ -564,11 +609,12 @@ export function applyAction(state: GameState, seat: number | null, action: Actio
     }
   } else if (action.type === 'play') {
     const selected = action.cards;
-    if (!Array.isArray(selected) || !selected.length || selected.length > 20 || new Set(selected).size !== selected.length || selected.some(id => !state.hands[seat!].includes(id))) return fail('notOwned', '请选择自己手里的牌');
-    const value = classify(selected, state.laiziRank, state.trick?.pattern);
+    const maxHandSize = (54 - rules.bottomCount) / 3 + rules.bottomCount;
+    if (!Array.isArray(selected) || !selected.length || selected.length > maxHandSize || new Set(selected).size !== selected.length || selected.some(id => !state.hands[seat!].includes(id))) return fail('notOwned', '请选择自己手里的牌');
+    const value = classify(selected, rules, state.trick?.pattern);
     if (!value) return fail('invalidPattern', '这些牌不能组成一种有效牌型');
-    if (!canBeat(value, state.trick?.pattern)) return fail('tooSmall', '需要相同牌型且更大的点数，或使用炸弹 / 王炸');
-    const cards = sortCards(selected, state.laiziRank);
+    if (!canBeat(value, state.trick?.pattern, rules)) return fail('tooSmall', '需要相同牌型且更大的点数，或使用炸弹 / 王炸');
+    const cards = sortCards(selected, rules);
     if (!state.trick) next.tablePlays = [null, null, null];
     next.hands[seat] = next.hands[seat].filter(id => !selected.includes(id));
     next.playedCards[seat].push(...cards);
@@ -577,8 +623,16 @@ export function applyAction(state: GameState, seat: number | null, action: Actio
     next.tablePlays[seat] = { cards, pattern: value };
     next.passes = 0;
     next.turn = (seat + 1) % 3;
-    if (value.type === 'bomb' || value.type === 'rocket') next.multiplier *= 2;
-    event = { type: 'play', seat, cards, pattern: value };
+    if (value.type === 'bomb' || value.type === 'rocket') next.multiplier *= rules.bombMultiplier;
+    let discarded: CardId | undefined;
+    // 炸弹过敏：打出炸弹后若手里仍有剩余手牌，随机弃掉 1 张并公开计入已出牌。
+    if (rules.bombDiscard && value.type === 'bomb' && next.hands[seat].length > 0) {
+      const rand = seededRandom((state.seed ^ Math.imul(next.seq + 1, 0x9E3779B1) ^ seat) >>> 0);
+      const dropIndex = Math.floor(rand() * next.hands[seat].length);
+      discarded = next.hands[seat].splice(dropIndex, 1)[0];
+      next.playedCards[seat].push(discarded);
+    }
+    event = discarded ? { type: 'play', seat, cards, pattern: value, discarded } : { type: 'play', seat, cards, pattern: value };
     if (!next.hands[seat].length) {
       next.phase = 'ended';
       next.turn = null;
@@ -600,11 +654,16 @@ export function applyAction(state: GameState, seat: number | null, action: Actio
 }
 
 export function publicState(state: GameState, seat: number): PublicGame {
+  const rules = stateRules(state);
+  const viewerIsFarmer = Number.isInteger(seat) && state.landlordSeat !== null && seat !== state.landlordSeat;
   return {
-    seq: state.seq, mode: state.mode, laiziRank: state.laiziRank, deal: state.deal, phase: state.phase, turn: state.turn,
+    seq: state.seq, mode: state.mode, laiziRank: state.laiziRank, affixes: [...state.affixes], deal: state.deal, phase: state.phase, turn: state.turn,
     hand: Number.isInteger(seat) ? [...state.hands[seat!]] : [], counts: state.hands.map(hand => hand.length),
-    openSeats: [...state.openSeats],
-    openHands: state.hands.map((hand, index) => state.openSeats[index] ? [...hand] : null),
+    openSeats: [...state.openSeats], forcedOpenSeats: [...state.forcedOpenSeats],
+    openHands: state.hands.map((hand, index) => {
+      const telepathyVisible = rules.farmerTelepathy && viewerIsFarmer && state.phase !== 'bidding' && index !== state.landlordSeat && index !== seat;
+      return (state.openSeats[index] || state.forcedOpenSeats[index] || telepathyVisible) ? [...hand] : null;
+    }),
     surrenderBy: state.surrenderBy,
     bottom: state.phase === 'bidding' ? [] : [...state.bottom], bids: [...state.bids],
     highestBid: state.highestBid, landlordSeat: state.landlordSeat, multiplier: state.multiplier,

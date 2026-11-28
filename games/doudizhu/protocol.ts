@@ -1,5 +1,5 @@
 import type { Messages, WireProtocol } from '../shared/protocol.ts';
-import type { Action, Difficulty, PublicGame, RoomInfo } from './types.ts';
+import type { Action, Difficulty, GameMode, PublicGame, RoomInfo } from './types.ts';
 
 export type ReactionKey = 'hello' | 'hurry' | 'nice' | 'thinking' | 'wow' | 'gg';
 export interface ClientPayloads {
@@ -7,15 +7,17 @@ export interface ClientPayloads {
   ping: Record<never, never>;
   nickname: { nickname: string };
   detachAccount: Record<never, never>;
-  create: { difficulty?: Difficulty; nickname?: string; autoFill?: boolean; solo?: boolean };
+  create: { difficulty?: Difficulty; mode?: GameMode; nickname?: string; autoFill?: boolean; solo?: boolean };
   join: { code: string; nickname?: string };
   leave: Record<never, never>;
   sync: Record<never, never>;
   ready: { ready: boolean };
-  settings: { difficulty?: Difficulty; autoFill?: boolean };
+  settings: { difficulty?: Difficulty; mode?: GameMode; autoFill?: boolean };
   bot: { seat: number; enabled: boolean };
   start: Record<never, never>;
   action: Action;
+  openHand: Record<never, never>;
+  surrender: { decision?: 'request' | 'agree' | 'reject' };
   auto: { enabled: boolean };
   reaction: { key: ReactionKey };
   rematch: Record<never, never>;

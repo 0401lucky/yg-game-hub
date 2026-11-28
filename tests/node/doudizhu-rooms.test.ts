@@ -239,3 +239,103 @@ test('房主调节三档人机、给第三位真人腾座；房主离开后转�
   } finally { await f.close(); }
 });
 
+test('癞子模式设置、明牌同步与倍率翻倍、双真人农民互相确认投降与人机禁投降', { timeout: 20000 }, async () => {
+  const f = await fixture();
+  try {
+    const host = await f.connect({ nickname: '房主甲' });
+    const guest = await f.connect({ nickname: '牌友乙' });
+    host.send('create', { difficulty: 'hard', mode: 'laizi' });
+    await waitUntil(() => host.state!);
+    const code = host.state!.room.code;
+    assert.equal(host.state!.room.mode, 'laizi');
+    guest.send('join', { code });
+    await waitUntil(() => guest.state?.room.code === code);
+    guest.send('ready', { ready: true });
+    await waitUntil(() => host.state!.room.players[1]!.ready);
+    host.send('start');
+    await waitUntil(() => host.state!.game?.phase === 'bidding' && guest.state!.game?.phase === 'bidding');
+    assert.equal(host.state!.game!.mode, 'laizi');
+    assert(host.state!.game!.laiziRank !== null);
+    const domain = f.service.rooms.get(code)!;
+
+    // 叫分阶段禁止投降
+    host.send('surrender', { decision: 'request' });
+    await waitUntil(() => host.messages.some(m => m.type === 'error' && m.code === 'notPlaying'));
+
+    // 叫分阶段房主明牌，牌友立即看到房主手牌且倍率翻倍
+    const multBefore = domain.game!.multiplier;
+    host.send('openHand');
+    await waitUntil(() => guest.state!.game!.openSeats[0]);
+    assert.equal(domain.game!.multiplier, multBefore * 2);
+    assert.deepEqual(guest.state!.game!.openHands[0], domain.game!.hands[0]);
+
+    // 让座位 2 的人机成为地主，测试双真人农民互相确认投降
+    // 先把状态设为进入出牌阶段，座位 2 为地主（人机），座位 0、1 为两位真人农民
+    while (domain.game!.phase === 'bidding') {
+      if (domain.game!.turn === 2) await delay(30);
+      else {
+        const client = domain.game!.turn === 0 ? host : guest;
+        const seq = domain.game!.seq;
+        client.send('action', { type: 'bid', score: 0 });
+        await waitUntil(() => domain.game!.seq > seq);
+      }
+      // 如果重发且人机不叫，直接通过引擎强制进出牌阶段确保人机为地主
+      if (domain.game!.deal >= 2) break;
+    }
+    if (domain.game!.phase !== 'playing' || domain.game!.landlordSeat !== 2) {
+      domain.game!.phase = 'playing';
+      domain.game!.landlordSeat = 2;
+      domain.game!.highestBid = 2;
+      domain.game!.turn = 0;
+      f.service.publish(domain);
+      await waitUntil(() => host.state!.game!.phase === 'playing' && host.state!.game!.landlordSeat === 2);
+    }
+
+    // 房主（真人农民）发起投降：不立即结束，等待另一位真人农民确认
+    host.send('surrender', { decision: 'request' });
+    await waitUntil(() => guest.state!.game!.surrenderVote?.initiator === 0);
+    assert.equal(domain.game!.phase, 'playing');
+    // 牌友拒绝投降：取消投票，对局继续
+    guest.send('surrender', { decision: 'reject' });
+    await waitUntil(() => host.state!.game!.surrenderVote === null);
+    assert.equal(domain.game!.phase, 'playing');
+    // 再次发起并同意：立即结束，地主（座位 2）获胜
+    host.send('surrender', { decision: 'request' });
+    await waitUntil(() => guest.state!.game!.surrenderVote?.initiator === 0);
+    guest.send('surrender', { decision: 'agree' });
+    await waitUntil(() => host.state!.game!.phase === 'ended' && guest.state!.game!.phase === 'ended');
+    assert.equal(domain.game!.winnerSide, 'landlord');
+    assert.equal(domain.game!.surrenderBy, 0);
+    assert.equal(f.matches.length, 1);
+    assert.equal(f.matches[0].mode, 'laizi-hard');
+  } finally { await f.close(); }
+});
+
+test('单人模式（真人配人机）：真人投降无需队友确认直接判负，人机永远不会触发投降', { timeout: 15000 }, async () => {
+  const f = await fixture();
+  try {
+    const solo = await f.connect({ nickname: '单人玩家' });
+    solo.send('create', { solo: true, difficulty: 'easy', mode: 'classic' });
+    await waitUntil(() => solo.state?.game?.phase === 'bidding');
+    const domain = f.service.rooms.get(solo.state!.room.code)!;
+    while (domain.game!.phase === 'bidding') {
+      if (domain.game!.turn !== 0) await delay(30);
+      else {
+        const seq = domain.game!.seq;
+        solo.send('action', { type: 'bid', score: 3 });
+        await waitUntil(() => domain.game!.seq > seq);
+      }
+    }
+    await waitUntil(() => solo.state!.game!.phase === 'playing');
+    // 人机不允许投降：直接调用服务端处理也必须被拒绝
+    const fakeSession = [...f.service.sessions.values()][0];
+    f.service.handleSurrender(domain, 1, 'request', fakeSession);
+    assert.equal(domain.game!.phase, 'playing');
+    // 真人点击投降立即结算
+    solo.send('surrender', { decision: 'request' });
+    await waitUntil(() => solo.state!.game!.phase === 'ended');
+    assert.equal(domain.game!.surrenderBy, 0);
+    assert.equal(domain.game!.winnerSide, domain.game!.landlordSeat === 0 ? 'farmers' : 'landlord');
+  } finally { await f.close(); }
+});
+

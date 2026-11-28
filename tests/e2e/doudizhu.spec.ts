@@ -91,7 +91,7 @@ test('斗地主长牌型：16 张飞机带翅膀、提示与不出、桌面和�
   let revision = 0;
   await page.routeWebSocket('**/ws/doudizhu', route => {
     const publish = () => route.send(JSON.stringify({ type: 'state', revision: ++revision, serverNow: Date.now(),
-      room: { code: '888888', hostId: players[0].id, players, round: 1, difficulty: 'hard', autoFill: true },
+      room: { code: '888888', hostId: players[0].id, players, round: 1, difficulty: 'hard', mode: 'classic', autoFill: true },
       me: { id: players[0].id, seat: 0 }, game: { ...publicState(state, 0), deadline: Date.now() + 30000 } } satisfies Response<'state'>));
     route.onMessage(raw => {
       const message = serverProtocol.decode(JSON.parse(String(raw)));

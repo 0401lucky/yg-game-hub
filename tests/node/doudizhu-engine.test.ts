@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DECK, cardInfo, rankOf, createGame, classify, canBeat, legalPlays, applyAction, publicState, seededRandom } from '../../games/doudizhu/engine.ts';
-import { chooseAction, botView, samplePossibleHands, suggestedPlays } from '../../games/doudizhu/bot.ts';
+import { DECK, cardInfo, rankOf, createGame, classify, canBeat, legalPlays, applyAction, applyOpenHand, applySurrender, publicState, seededRandom } from '../../games/doudizhu/engine.ts';
+import { chooseAction, botView, samplePossibleHands, suggestedPlays, shouldBotOpenHand } from '../../games/doudizhu/bot.ts';
 
 import type { CardId, Difficulty, GameState, PatternType, Play } from '../../games/doudizhu/types.ts';
 import { acceptedState, rejectionCode } from './helpers.ts';
@@ -177,5 +177,88 @@ test('三档人机与混合难度完成 24 局；每手合法，牌数与结算�
     assert(state.scores);
     assert.equal(state.scores.reduce((sum, score) => sum + score, 0), 0);
   }
+});
+
+test('癞子模式：软炸弹、硬炸弹、纯癞子炸弹与王炸优先级，以及顺子/三带/不可当王', () => {
+  const laizi = 5;
+  const softBomb = classify(cards(7, 7, 7, 5), laizi);
+  const hardBomb = classify(cards(6, 6, 6, 6), laizi);
+  const pureBomb = classify(cards(5, 5, 5, 5), laizi);
+  const rocket = classify(cards(16, 17), laizi);
+  assert.equal(softBomb?.type, 'bomb');
+  assert.equal(softBomb?.bombKind, 'soft');
+  assert.equal(hardBomb?.bombKind, 'hard');
+  assert.equal(pureBomb?.bombKind, 'pure');
+  // 软炸弹 < 硬炸弹 < 纯癞子炸弹 < 王炸
+  assert(canBeat(hardBomb, softBomb));
+  assert(!canBeat(softBomb, hardBomb));
+  assert(canBeat(pureBomb, hardBomb));
+  assert(!canBeat(hardBomb, pureBomb));
+  assert(canBeat(rocket, pureBomb));
+  assert(!canBeat(pureBomb, rocket));
+  // 癞子不可当王
+  assert.equal(classify(cards(17, 5), laizi), null);
+  assert.equal(classify(cards(16, 5), laizi), null);
+  // 癞子补齐顺子和连对
+  assert.equal(classify(cards(3, 4, 5, 6, 7), laizi)?.type, 'straight');
+  assert.equal(classify(cards(8, 9, 10, 12, 5), laizi)?.type, 'straight');
+  assert.equal(classify(cards(6, 6, 7, 8, 8, 5), laizi)?.type, 'pairStraight');
+  // 癞子牌在有目标牌型时优先匹配可压过目标的解释
+  const pairTarget = classify(cards(10, 10), laizi);
+  assert(canBeat(classify(cards(11, 5), laizi, pairTarget), pairTarget));
+  // 癞子完整对局 12 局
+  for (let seed = 1; seed <= 12; seed++) {
+    let state = createGame({ seed: seed * 1013, firstBidder: seed % 3, mode: 'laizi' });
+    assert(state.laiziRank !== null && state.laiziRank >= 3 && state.laiziRank <= 15);
+    const random = seededRandom(seed + 100);
+    let actions = 0;
+    while (state.phase !== 'ended' && actions < 240) {
+      const level = (['easy', 'hard', 'hell'] as Difficulty[])[state.turn!];
+      const action = chooseAction(botView(state, state.turn!), level, { random, thinkMs: 35 });
+      const result = applyAction(state, state.turn, action);
+      assert(result.ok, `laizi seed=${seed}: ${JSON.stringify({ action, result })}`);
+      state = acceptedState(result);
+      actions++;
+    }
+    assert.equal(state.phase, 'ended', `laizi seed=${seed} 未结束`);
+    assert.equal(state.scores!.reduce((sum, score) => sum + score, 0), 0);
+  }
+});
+
+test('明牌：叫分与出牌阶段均可明牌、倍率翻倍、公开手牌透传且地狱抽样尊重明牌', () => {
+  let state = createGame({ seed: 2026 });
+  assert.deepEqual(publicState(state, 1).openHands, [null, null, null]);
+  state = acceptedState(applyOpenHand(state, 0));
+  assert.equal(state.multiplier, 2);
+  assert.equal(rejectionCode(applyOpenHand(state, 0)), 'alreadyOpen');
+  const view1 = botView(state, 1);
+  assert.deepEqual(view1.openHands[0], state.hands[0]);
+  assert.equal(view1.openHands[2], null);
+  state = acceptedState(applyAction(state, 0, { type: 'bid', score: 3 }));
+  // 进入出牌阶段后另一位玩家也可明牌
+  state = acceptedState(applyOpenHand(state, 2));
+  assert.equal(state.multiplier, 4);
+  const sample = samplePossibleHands(botView(state, 1), seededRandom(7));
+  assert(sample);
+  assert.deepEqual(sample[0], state.hands[0]);
+  assert.deepEqual(sample[2], state.hands[2]);
+  // 极强手牌触发人机明牌判断，弱牌不触发
+  const strongState = playing([cards(17, 16, 15, 15, 15, 15, 14, 14, 14, 14, 13, 13, 12, 12, 11, 11, 10), cards(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 3, 4, 6, 7, 8), cards(3, 4, 5, 6, 7, 8, 9, 9, 10, 11, 12, 13, 3, 4, 5, 6, 7)]);
+  assert.equal(shouldBotOpenHand(botView(strongState, 0), 'hard', () => 0.1), true);
+  assert.equal(shouldBotOpenHand(botView(strongState, 1), 'hard', () => 0.1), false);
+});
+
+test('投降：叫分阶段禁止投降，出牌阶段投降立即判对方胜且积分守恒', () => {
+  const bidding = createGame({ seed: 18 });
+  assert.equal(rejectionCode(applySurrender(bidding, 0)), 'notPlaying');
+  const mid = playing([['S3', 'S4'], ['H4', 'H5'], ['C5', 'C6']], { landlordSeat: 0 });
+  const landlordLose = acceptedState(applySurrender(mid, 0));
+  assert.equal(landlordLose.phase, 'ended');
+  assert.equal(landlordLose.winnerSide, 'farmers');
+  assert.equal(landlordLose.surrenderBy, 0);
+  assert.deepEqual(landlordLose.scores, [-4, 2, 2]);
+  const farmerLose = acceptedState(applySurrender(mid, 1));
+  assert.equal(farmerLose.winnerSide, 'landlord');
+  assert.deepEqual(farmerLose.scores, [4, -2, -2]);
 });
 

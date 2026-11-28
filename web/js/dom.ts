@@ -280,6 +280,7 @@ export interface HtmlIds {
   "nickname": HTMLElementTagNameMap["input"];
   "identityTag": HTMLElementTagNameMap["span"];
   "difficultyPicker": HTMLElementTagNameMap["div"];
+  "modePicker": HTMLElementTagNameMap["div"];
   "difficultyNote": HTMLElementTagNameMap["p"];
   "soloButton": HTMLElementTagNameMap["button"];
   "createButton": HTMLElementTagNameMap["button"];
@@ -293,6 +294,7 @@ export interface HtmlIds {
   "gameMetrics": HTMLElementTagNameMap["div"];
   "baseScore": HTMLElementTagNameMap["b"];
   "multiplier": HTMLElementTagNameMap["b"];
+  "laiziBadge": HTMLElementTagNameMap["span"];
   "roundNumber": HTMLElementTagNameMap["span"];
   "bottomDeck": HTMLElementTagNameMap["div"];
   "bottomCaption": HTMLElementTagNameMap["span"];
@@ -314,7 +316,10 @@ export interface HtmlIds {
   "tableUtilities": HTMLElementTagNameMap["div"];
   "recorderButton": HTMLElementTagNameMap["button"];
   "chatButton": HTMLElementTagNameMap["button"];
+  "openHandButton": HTMLElementTagNameMap["button"];
+  "surrenderButton": HTMLElementTagNameMap["button"];
   "autoButton": HTMLElementTagNameMap["button"];
+  "surrenderBanner": HTMLElementTagNameMap["div"];
   "keyboardHint": HTMLElementTagNameMap["div"];
   "recorderPanel": HTMLElementTagNameMap["aside"];
   "reactionMenu": HTMLElementTagNameMap["div"];
@@ -325,6 +330,9 @@ export interface HtmlIds {
   "leaveDialog": HTMLElementTagNameMap["dialog"];
   "leaveTitle": HTMLElementTagNameMap["h2"];
   "leaveExplanation": HTMLElementTagNameMap["p"];
+  "surrenderDialog": HTMLElementTagNameMap["dialog"];
+  "surrenderTitle": HTMLElementTagNameMap["h2"];
+  "surrenderExplanation": HTMLElementTagNameMap["p"];
   "toast": HTMLElementTagNameMap["div"];
   "liveAnnouncements": HTMLElementTagNameMap["div"];
   "particlesCanvas": HTMLElementTagNameMap["canvas"];

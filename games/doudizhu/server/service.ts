@@ -5,7 +5,7 @@ import type { AccountMatch } from '../../shared/protocol.ts';
 import type { DailyStats } from '../../../backend/dailyStats.ts';
 import type * as Engine from '../engine.ts';
 import type * as Bot from '../bot.ts';
-import type { Difficulty, GameState, PlayerInfo, Action, ActionSource, RoomInfo } from '../types.ts';
+import type { Difficulty, GameMode, GameState, PlayerInfo, Action, ActionSource, RoomInfo } from '../types.ts';
 import { serverProtocol } from '../protocol.ts';
 import type { ClientMessage, ClientPayloads, Request, ServerMessage } from '../protocol.ts';
 interface AccountIdentity { id: number; nickname: string }
@@ -13,10 +13,11 @@ interface AuthAdapter { userFromCookieHeader?(cookie: string): AccountIdentity |
 interface ServiceOptions { auth?: AuthAdapter; sanitizeText?: (input: string) => string; stats?: DailyStats; turnMs?: number; bidMs?: number; botDelayMs?: number; tickMs?: number; disconnectGraceMs?: number }
 export interface RoomPlayer extends PlayerInfo { userId?: number | null; disconnectedAt?: number | null; abandoned: boolean; lastReaction?: number }
 export interface Session { token: string; id: string; userId: number | null; nickname: string; ws: AccountSocket | null; roomCode: string | null; lastSeen: number; createRequests: Map<string, {at: number; code: string}> }
-export interface DoudizhuRoom { code: string; hostId: string; players: (RoomPlayer | null)[]; difficulty: Difficulty; autoFill: boolean; game: GameState | null; round: number; revision: number; createdAt: number; touchedAt: number; deadline: number | null; botDue: number | null; recorded: boolean; startedAt?: number }
+export interface DoudizhuRoom { code: string; hostId: string; players: (RoomPlayer | null)[]; difficulty: Difficulty; mode: GameMode; autoFill: boolean; game: GameState | null; round: number; revision: number; createdAt: number; touchedAt: number; deadline: number | null; botDue: number | null; recorded: boolean; startedAt?: number; surrenderVote: { initiator: number; votes: number[] } | null; botOpenChecked: [boolean, boolean, boolean] }
 
 
 const LEVELS = new Set(['easy', 'hard', 'hell']);
+const MODES = new Set<GameMode>(['classic', 'laizi']);
 const REACTIONS = { hello: '牌友好呀', hurry: '轮到你啦', nice: '这手漂亮', thinking: '让我想想', wow: '好家伙！', gg: '打得不错' };
 const BOT_NAMES = { easy: ['小青 · 陪练', '阿金 · 陪练'], hard: ['青狐 · 棋手', '金狐 · 棋手'], hell: ['玄鸦 · 魔王', '赤狐 · 魔王'] };
 
@@ -222,12 +223,14 @@ class DoudizhuService {
         const data = (message.data ?? {}) as ClientPayloads['settings'];
 
         if (!host) { this.error(session.ws, 'hostOnly', '只有房主可以设置牌桌'); break; }
-        if (room.game) { this.error(session.ws, 'inProgress', '下一局再调整人机难度'); break; }
+        if (room.game) { this.error(session.ws, 'inProgress', '下一局再调整牌桌设置'); break; }
         if (data.difficulty !== undefined && !LEVELS.has(data.difficulty)) { this.error(session.ws, 'invalidLevel', '请选择简单、困难或地狱'); break; }
+        if (data.mode !== undefined && !MODES.has(data.mode)) { this.error(session.ws, 'invalidMode', '请选择经典或癞子模式'); break; }
         if (data.difficulty) {
           room.difficulty = data.difficulty;
           room.players = room.players.map((item, index) => item?.isBot ? this.makeBot(index, room.difficulty) : item);
         }
+        if (data.mode) room.mode = data.mode;
         if (typeof data.autoFill === 'boolean') room.autoFill = data.autoFill;
         this.publish(room!);
         break;
@@ -255,6 +258,17 @@ class DoudizhuService {
 
         if (!room.game) { this.error(session.ws, 'notStarted', '等大家到齐再开局'); break; }
         this.act(room, seat, data, 'human', session);
+        break;
+      }
+      case 'openHand': {
+        if (!room.game) { this.error(session.ws, 'notStarted', '等大家到齐再开局'); break; }
+        this.openHand(room, seat, 'human', session);
+        break;
+      }
+      case 'surrender': {
+        const data = (message.data ?? {}) as ClientPayloads['surrender'];
+        if (!room.game) { this.error(session.ws, 'notStarted', '等大家到齐再开局'); break; }
+        this.handleSurrender(room, seat, data.decision || 'request', session);
         break;
       }
       case 'auto': {
@@ -295,6 +309,7 @@ class DoudizhuService {
         room.game = null;
         room.deadline = null;
         room.botDue = null;
+        room.surrenderVote = null;
         room.players = (room.players as RoomPlayer[]).map((item, index) => item.abandoned ? null : { ...item, ready: item.isBot || item.id === room.hostId, rematchReady: item.isBot });
         this.publish(room!);
         break;
@@ -312,12 +327,15 @@ class DoudizhuService {
     }
     if (session.roomCode) { this.error(session.ws, 'alreadyInRoom', '先离开当前牌桌再开新房间', requestId); return; }
     if (!LEVELS.has(data.difficulty || 'hard')) { this.error(session.ws, 'invalidLevel', '请选择简单、困难或地狱', requestId); return; }
+    if (data.mode !== undefined && !MODES.has(data.mode)) { this.error(session.ws, 'invalidMode', '请选择经典或癞子模式', requestId); return; }
     if (!session.userId) session.nickname = this.nickname(data.nickname || session.nickname);
     const difficulty = data.difficulty || 'hard';
+    const mode: GameMode = data.mode || 'classic';
     const room: DoudizhuRoom = {
       code: this.code(), hostId: session.id, players: [this.player(session, 0, true), null, this.makeBot(2, difficulty)],
-      difficulty, autoFill: data.autoFill !== false, game: null, round: 0, revision: 0,
-      createdAt: Date.now(), touchedAt: Date.now(), deadline: null, botDue: null, recorded: false
+      difficulty, mode, autoFill: data.autoFill !== false, game: null, round: 0, revision: 0,
+      createdAt: Date.now(), touchedAt: Date.now(), deadline: null, botDue: null, recorded: false,
+      surrenderVote: null, botOpenChecked: [false, false, false]
     };
     this.rooms.set(room.code, room);
     this.stats?.recordRoomCreated();
@@ -355,6 +373,10 @@ class DoudizhuService {
     if (seat < 0) return;
     if (room.game) {
       Object.assign(room.players[seat]!, { connected: false, auto: true, autoReason: 'left', abandoned: true });
+      // 若有农民正在等待离场玩家的投降投票，清除待定投票
+      if (room.surrenderVote && room.surrenderVote.initiator !== seat && !room.surrenderVote.votes.includes(seat)) {
+        room.surrenderVote = null;
+      }
     } else room.players[seat] = null;
     const humans = room.players.filter((item): item is RoomPlayer => Boolean(item && !item.isBot && !item.abandoned));
     if (!humans.length) { this.rooms.delete(room.code); return; }
@@ -373,10 +395,12 @@ class DoudizhuService {
     room.players = room.players.map((item, seat) => item || this.makeBot(seat, room.difficulty));
     room.round++;
     room.recorded = false;
+    room.surrenderVote = null;
+    room.botOpenChecked = [false, false, false];
     room.startedAt = Date.now();
     this.stats?.recordGameStarted();
     const firstBidder = rematch ? (room.round - 1) % 3 : crypto.randomInt(0, 3);
-    room.game = this.engine.createGame({ seed: crypto.randomBytes(4).readUInt32LE(), firstBidder });
+    room.game = this.engine.createGame({ seed: crypto.randomBytes(4).readUInt32LE(), firstBidder, mode: room.mode });
     for (const player of room.players as RoomPlayer[]) { player.rematchReady = player.isBot; if (player.autoReason !== 'manual') { player.auto = player.isBot; player.autoReason = null; } }
     this.advanceClock(room, true);
     this.publish(room!);
@@ -387,6 +411,94 @@ class DoudizhuService {
     room.botDue = room.game!.phase === 'ended' ? null : Date.now() + this.botDelayMs + (dealing ? 800 : 0);
   }
 
+  recordFinishedGame(room: DoudizhuRoom) {
+    if (room.game?.phase !== 'ended' || room.recorded) return;
+    room.recorded = true;
+    room.surrenderVote = null;
+    this.stats?.recordGameFinished();
+    const winnerColors = room.game.winnerSide === 'landlord'
+      ? [room.game.landlordSeat!] : [0, 1, 2].filter(index => index !== room.game!.landlordSeat);
+    this.auth.recordMatch?.({
+      gameId: 'doudizhu', roomCode: room.code, mode: `${room.mode}-${room.difficulty}`,
+      players: (room.players as RoomPlayer[]).map((player, color) => ({ playerId: player.id, nickname: player.nickname, color, userId: player.isBot ? null : player.userId })),
+      winnerColors, durationMs: Date.now() - room.startedAt!!
+    });
+  }
+
+  openHand(room: DoudizhuRoom, seat: number, source: ActionSource, session?: Session) {
+    const result = this.engine.applyOpenHand(room.game!, seat);
+    if (!result.ok) {
+      if (session) this.error(session.ws, result.code, result.reason);
+      return false;
+    }
+    room.game = result.state;
+    room.game.lastAction.source = source;
+    this.publish(room);
+    return true;
+  }
+
+  handleSurrender(room: DoudizhuRoom, seat: number, decision: 'request' | 'agree' | 'reject', session: Session) {
+    const game = room.game;
+    const player = room.players[seat];
+    if (!game || game.phase === 'ended') { this.error(session.ws, 'ended', '这局已经结束了'); return; }
+    if (!player || player.isBot) { this.error(session.ws, 'botNoSurrender', '人机不允许投降'); return; }
+    if (game.phase !== 'playing' || game.landlordSeat === null) {
+      this.error(session.ws, 'notPlaying', '叫分阶段不能投降，等确定地主后再决定');
+      return;
+    }
+    const isLandlord = seat === game.landlordSeat;
+    if (isLandlord) {
+      if (decision === 'reject') return;
+      const result = this.engine.applySurrender(game, seat);
+      if (!result.ok) { this.error(session.ws, result.code, result.reason); return; }
+      room.game = result.state;
+      room.game.lastAction.source = 'human';
+      this.advanceClock(room);
+      this.recordFinishedGame(room);
+      this.publish(room);
+      return;
+    }
+    // 农民侧：检查是否有另一位未离场的真人农民队友
+    const teammateSeat = [0, 1, 2].find(index => index !== game.landlordSeat && index !== seat)!;
+    const teammate = room.players[teammateSeat];
+    const hasHumanTeammate = Boolean(teammate && !teammate.isBot && !teammate.abandoned);
+    if (!hasHumanTeammate) {
+      if (decision === 'reject') return;
+      const result = this.engine.applySurrender(game, seat);
+      if (!result.ok) { this.error(session.ws, result.code, result.reason); return; }
+      room.game = result.state;
+      room.game.lastAction.source = 'human';
+      this.advanceClock(room);
+      this.recordFinishedGame(room);
+      this.publish(room);
+      return;
+    }
+    if (decision === 'reject') {
+      if (!room.surrenderVote) return;
+      room.surrenderVote = null;
+      this.publish(room);
+      return;
+    }
+    if (!room.surrenderVote) {
+      room.surrenderVote = { initiator: seat, votes: [seat] };
+      this.publish(room);
+      return;
+    }
+    if (!room.surrenderVote.votes.includes(seat)) room.surrenderVote.votes.push(seat);
+    if (room.surrenderVote.votes.includes(seat) && room.surrenderVote.votes.includes(teammateSeat)) {
+      const initiator = room.surrenderVote.initiator;
+      const result = this.engine.applySurrender(game, initiator);
+      if (!result.ok) { this.error(session.ws, result.code, result.reason); return; }
+      room.game = result.state;
+      room.game.lastAction.source = 'human';
+      this.advanceClock(room);
+      this.recordFinishedGame(room);
+      this.publish(room);
+    } else {
+      this.publish(room);
+    }
+  }
+
   act(room: DoudizhuRoom, seat: number, action: Action, source: ActionSource, session?: Session) {
     const result = this.engine.applyAction(room.game!, seat, action);
     if (!result.ok) {
@@ -395,19 +507,17 @@ class DoudizhuService {
     }
     room.game = result.state;
     room.game!.lastAction.source = source;
+    if (room.game!.lastAction.type === 'redeal') {
+      room.botOpenChecked = [false, false, false];
+      room.surrenderVote = null;
+    }
+    if (room.game!.lastAction.type === 'landlord' && room.game!.landlordSeat !== null) {
+      // 地主拿到 3 张底牌后允许再评估一次明牌
+      room.botOpenChecked[room.game!.landlordSeat] = false;
+    }
     if (source === 'human') { room.players[seat]!.auto = false; room.players[seat]!.autoReason = null; }
     this.advanceClock(room, room.game!.lastAction.type === 'redeal');
-    if (room.game!.phase === 'ended' && !room.recorded) {
-      room.recorded = true;
-      this.stats?.recordGameFinished();
-      const winnerColors = room.game!.winnerSide === 'landlord'
-        ? [room.game!.landlordSeat!] : [0, 1, 2].filter(index => index !== room.game!.landlordSeat);
-      this.auth.recordMatch?.({
-        gameId: 'doudizhu', roomCode: room.code, mode: `classic-${room.difficulty}`,
-        players: (room.players as RoomPlayer[]).map((player, color) => ({ playerId: player.id, nickname: player.nickname, color, userId: player.isBot ? null : player.userId })),
-        winnerColors, durationMs: Date.now() - room.startedAt!!
-      });
-    }
+    this.recordFinishedGame(room);
     this.publish(room!);
     return true;
   }
@@ -416,9 +526,9 @@ class DoudizhuService {
     const ids = new Set(room.players.filter((item): item is RoomPlayer => Boolean(item && !item.isBot && !item.abandoned)).map(item => item.id));
     return [...this.sessions.values()].filter(session => ids.has(session.id) && session.roomCode === room.code);
   }
-  roomInfo(room: DoudizhuRoom) : RoomInfo {
+  roomInfo(room: DoudizhuRoom): RoomInfo {
     return {
-      code: room.code, hostId: room.hostId, difficulty: room.difficulty, autoFill: room.autoFill, round: room.round,
+      code: room.code, hostId: room.hostId, difficulty: room.difficulty, mode: room.mode, autoFill: room.autoFill, round: room.round,
       players: room.players.map(item => item ? {
         id: item.id, nickname: item.nickname, seat: item.seat, isBot: item.isBot, level: item.level,
         ready: item.ready, connected: item.connected, auto: item.auto, autoReason: item.autoReason,
@@ -431,7 +541,12 @@ class DoudizhuService {
     if (seat < 0) return;
     this.send(session.ws, {
       type: 'state', revision: room.revision, serverNow: Date.now(), room: this.roomInfo(room),
-      me: { id: session.id, seat }, game: room.game ? { ...this.engine.publicState(room.game, seat), deadline: room.deadline } : null
+      me: { id: session.id, seat },
+      game: room.game ? {
+        ...this.engine.publicState(room.game, seat),
+        surrenderVote: room.surrenderVote ? { initiator: room.surrenderVote.initiator, votes: [...room.surrenderVote.votes] } : null,
+        deadline: room.deadline
+      } : null
     });
   }
   publish(room: DoudizhuRoom) {
@@ -441,7 +556,7 @@ class DoudizhuService {
   }
   listRooms() {
     return [...this.rooms.values()].map(room => ({
-      code: room.code, phase: room.game?.phase || 'waiting', difficulty: room.difficulty,
+      code: room.code, phase: room.game?.phase || 'waiting', difficulty: room.difficulty, mode: room.mode,
       playerCount: room.players.filter(Boolean).length,
       humans: room.players.filter((item): item is RoomPlayer => Boolean(item && !item.isBot && item.connected)).length,
       openSeats: room.players.filter(item => !item).length
@@ -460,7 +575,14 @@ class DoudizhuService {
       if (!((player.isBot || player.auto) && now >= room.botDue!) && now < room.deadline!) continue;
       try {
         const view = this.bot.botView(room.game!, seat);
-        const action = this.bot.chooseAction(view, player.level || room.difficulty);
+        // 仅人机座位（不含托管真人）对牌面极度自信时会主动明牌
+        if (player.isBot && !room.game!.openSeats[seat] && !room.botOpenChecked[seat]) {
+          room.botOpenChecked[seat] = true;
+          if (this.bot.shouldBotOpenHand(view, player.level || room.difficulty)) {
+            this.openHand(room, seat, 'bot');
+          }
+        }
+        const action = this.bot.chooseAction(this.bot.botView(room.game!, seat), player.level || room.difficulty);
         if (action) this.act(room, seat, action, player.isBot ? 'bot' : player.auto ? 'auto' : 'timeout');
       } catch (error) {
         console.error('[斗地主] 人机思考失败:', error);
